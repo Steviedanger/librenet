@@ -1,50 +1,32 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 /**
- * Email sending via nodemailer (SMTP).
+ * Email sending via Resend.
  *
- * Configured by the EMAIL_HOST, EMAIL_PORT, EMAIL_USER and EMAIL_PASS
- * environment variables. When they're absent we fall back to logging the
- * message to the console so local development works without any email setup.
+ * Configured by the RESEND_API_KEY environment variable. When it's absent we
+ * fall back to logging the message to the console so local development works
+ * without any email setup.
  */
 
-// Build the transporter lazily on first use. This MUST NOT run at module load:
-// server.js imports this file before calling dotenv.config(), and ES imports are
-// hoisted, so reading process.env here at import time would always see undefined
-// and silently fall back to console logging even when SMTP is fully configured.
-let transporter;
+// Build the Resend client lazily on first use. This MUST NOT run at module
+// load: server.js imports this file before calling dotenv.config(), and ES
+// imports are hoisted, so reading process.env here at import time would always
+// see undefined and silently fall back to console logging even when configured.
+let resend;
 
-const getTransporter = () => {
-  const isConfigured = Boolean(
-    process.env.EMAIL_HOST &&
-      process.env.EMAIL_PORT &&
-      process.env.EMAIL_USER &&
-      process.env.EMAIL_PASS
-  );
-  if (!isConfigured) return null;
-
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT),
-      // Port 465 uses implicit TLS; other ports use STARTTLS when available.
-      secure: Number(process.env.EMAIL_PORT) === 465,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+const getResend = () => {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!resend) {
+    resend = new Resend(process.env.RESEND_API_KEY);
   }
-  return transporter;
+  return resend;
 };
 
-// The "from" address. Defaults to the authenticated SMTP user when EMAIL_FROM
-// is not set.
+// The "from" address must use a domain you've verified in Resend. The default
+// onboarding sender works for testing but only delivers to your own Resend
+// account email — set EMAIL_FROM to a verified-domain address for real users.
 const fromAddress = () =>
-  process.env.EMAIL_FROM ||
-  (process.env.EMAIL_USER
-    ? `LibreNet Library <${process.env.EMAIL_USER}>`
-    : 'LibreNet Library');
+  process.env.EMAIL_FROM || 'LibreNet Library <onboarding@resend.dev>';
 
 /**
  * Send an email.
@@ -52,16 +34,16 @@ const fromAddress = () =>
  * @param {{ to: string, subject: string, html: string, text?: string }} opts
  */
 const sendEmail = async ({ to, subject, html, text }) => {
-  const mailer = getTransporter();
-  if (!mailer) {
-    console.log('\n[sendEmail] EMAIL_* env vars not set — logging email instead:');
+  const client = getResend();
+  if (!client) {
+    console.log('\n[sendEmail] RESEND_API_KEY not set — logging email instead:');
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
     console.log(`  Body:    ${text || html}\n`);
     return { mocked: true };
   }
 
-  const info = await mailer.sendMail({
+  const { data, error } = await client.emails.send({
     from: fromAddress(),
     to,
     subject,
@@ -69,7 +51,10 @@ const sendEmail = async ({ to, subject, html, text }) => {
     ...(text ? { text } : {}),
   });
 
-  return info;
+  if (error) {
+    throw new Error(error.message || 'Failed to send email via Resend');
+  }
+  return data;
 };
 
 /**
