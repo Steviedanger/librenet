@@ -1,8 +1,0 @@
-{
-  "ignore": [
-    "library-system/backend/.env",
-    "library-system/backend/.env.*",
-    "**/*.env",
-    "**/.env"
-  ]
-}
