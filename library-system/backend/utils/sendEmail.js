@@ -1,49 +1,47 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 /**
- * Create a reusable Nodemailer transport from environment config.
+ * Email sending via Resend.
+ *
+ * Configured by the RESEND_API_KEY environment variable. When it's absent we
+ * fall back to logging the message to the console so local development works
+ * without any email setup.
  */
-const createTransport = () =>
-  nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: Number(process.env.EMAIL_PORT) === 465,
-    family: 4, // force IPv4 — avoids IPv6 routing issues on some networks
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+
+const isConfigured = Boolean(process.env.RESEND_API_KEY);
+const resend = isConfigured ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// The "from" address must use a domain you've verified in Resend. The default
+// onboarding sender works for testing but only delivers to your own Resend
+// account email — set EMAIL_FROM to a verified-domain address for real users.
+const FROM = process.env.EMAIL_FROM || 'LibreNet Library <onboarding@resend.dev>';
 
 /**
- * Send an email. Falls back to logging the message to the console when SMTP
- * credentials are not configured, so the app remains usable in development.
+ * Send an email.
  *
  * @param {{ to: string, subject: string, html: string, text?: string }} opts
  */
 const sendEmail = async ({ to, subject, html, text }) => {
-  const configured =
-    process.env.EMAIL_USER &&
-    process.env.EMAIL_PASS &&
-    process.env.EMAIL_USER !== 'your_email@gmail.com';
-
-  if (!configured) {
-    console.log('\n[sendEmail] SMTP not configured — logging email instead:');
+  if (!isConfigured) {
+    console.log('\n[sendEmail] RESEND_API_KEY not set — logging email instead:');
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
     console.log(`  Body:    ${text || html}\n`);
     return { mocked: true };
   }
 
-  const transport = createTransport();
-  const info = await transport.sendMail({
-    from: `"LibreNet Library" <${process.env.EMAIL_USER}>`,
+  const { data, error } = await resend.emails.send({
+    from: FROM,
     to,
     subject,
-    text: text || '',
     html,
+    ...(text ? { text } : {}),
   });
-  return info;
+
+  if (error) {
+    throw new Error(error.message || 'Failed to send email via Resend');
+  }
+  return data;
 };
 
 /**
