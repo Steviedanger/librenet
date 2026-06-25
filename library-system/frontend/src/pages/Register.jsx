@@ -5,35 +5,35 @@ import useAuth from '../hooks/useAuth.js';
 const Register = () => {
   const { register } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
-  const [status, setStatus] = useState({ loading: false, error: '', success: '' });
+  const [status, setStatus] = useState({ loading: false, error: '', registered: false });
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus({ loading: false, error: '', success: '' });
+    setStatus({ loading: false, error: '', registered: false });
 
     if (form.password !== form.confirm) {
-      return setStatus({ loading: false, error: 'Passwords do not match', success: '' });
+      return setStatus({ loading: false, error: 'Passwords do not match', registered: false });
     }
     if (form.password.length < 6) {
-      return setStatus({ loading: false, error: 'Password must be at least 6 characters', success: '' });
+      return setStatus({ loading: false, error: 'Password must be at least 6 characters', registered: false });
     }
 
-    setStatus({ loading: true, error: '', success: '' });
+    setStatus({ loading: true, error: '', registered: false });
     try {
-      const res = await register({
+      await register({
         name: form.name,
         email: form.email,
         password: form.password,
       });
-      setStatus({ loading: false, error: '', success: res.message });
+      setStatus({ loading: false, error: '', registered: true });
       setForm({ name: '', email: '', password: '', confirm: '' });
     } catch (err) {
       setStatus({
         loading: false,
         error: err.response?.data?.message || 'Registration failed',
-        success: '',
+        registered: false,
       });
     }
   };
@@ -45,13 +45,15 @@ const Register = () => {
         Create your free reader account to borrow and read books online.
       </p>
 
-      {status.success ? (
-        <div className="card mt-6 space-y-3 border-forest-300/30 p-6 text-cream-200">
-          <p className="text-forest-300">✓ {status.success}</p>
+      {status.registered ? (
+        <div className="card mt-6 space-y-4 border-forest-300/30 p-6 text-center text-cream-200">
+          <p className="font-serif text-xl text-forest-300">✓ Account Created Successfully!</p>
           <p className="text-sm text-cream-300">
-            Check your inbox for the verification link. Once verified you can{' '}
-            <Link to="/login" className="text-forest-300 hover:underline">log in</Link>.
+            Please wait a few minutes for your account to be verified. Once verified you can log in.
           </p>
+          <Link to="/login" className="btn-primary inline-block w-full">
+            Go to Login
+          </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="card mt-6 space-y-4 p-6" noValidate>
