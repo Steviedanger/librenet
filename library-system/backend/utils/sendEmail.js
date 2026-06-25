@@ -51,8 +51,15 @@ const sendEmail = async ({ to, subject, html, text }) => {
     ...(text ? { text } : {}),
   });
 
+  // Never let an email failure break the request that triggered it. Without a
+  // verified domain, Resend rejects sends to anyone but the account owner with
+  // a 403 — accounts are verified manually in the database, so we log the
+  // problem and carry on rather than failing registration / password resets.
   if (error) {
-    throw new Error(error.message || 'Failed to send email via Resend');
+    console.warn(
+      `[sendEmail] Resend could not deliver to ${to}: ${error.message || error}`
+    );
+    return { skipped: true, error };
   }
   return data;
 };
