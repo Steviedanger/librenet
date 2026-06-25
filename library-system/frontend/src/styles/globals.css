@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-navy-900 text-cream-200 font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif text-cream-100;
+  }
+
+  /* Visible focus ring for keyboard users */
+  :focus-visible {
+    @apply outline-none ring-2 ring-forest-300 ring-offset-2 ring-offset-navy-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-medium
+      transition-all duration-200 focus-visible:ring-2 focus-visible:ring-forest-300
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-forest-400 text-navy-900 hover:bg-forest-300 hover:shadow-lift;
+  }
+  .btn-outline {
+    @apply btn border border-cream-300/40 text-cream-200 hover:border-forest-300 hover:text-forest-300;
+  }
+  .btn-ghost {
+    @apply btn text-cream-300 hover:bg-navy-700;
+  }
+  .btn-danger {
+    @apply btn bg-red-600/90 text-white hover:bg-red-500;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-cream-300/20 bg-navy-800 px-4 py-2.5 text-cream-100
+      placeholder:text-cream-300/40 focus:border-forest-300 focus:outline-none;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-cream-300;
+  }
+
+  .card {
+    @apply rounded-xl border border-cream-300/10 bg-navy-800 shadow-card;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}
+
+/* Thin themed scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a1322;
+}
+::-webkit-scrollbar-thumb {
+  background: #1d3054;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2f6b4f;
+}
