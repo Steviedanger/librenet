@@ -8,15 +8,23 @@ import nodemailer from 'nodemailer';
  * message to the console so local development works without any email setup.
  */
 
-const isConfigured = Boolean(
-  process.env.EMAIL_HOST &&
-    process.env.EMAIL_PORT &&
-    process.env.EMAIL_USER &&
-    process.env.EMAIL_PASS
-);
+// Build the transporter lazily on first use. This MUST NOT run at module load:
+// server.js imports this file before calling dotenv.config(), and ES imports are
+// hoisted, so reading process.env here at import time would always see undefined
+// and silently fall back to console logging even when SMTP is fully configured.
+let transporter;
 
-const transporter = isConfigured
-  ? nodemailer.createTransport({
+const getTransporter = () => {
+  const isConfigured = Boolean(
+    process.env.EMAIL_HOST &&
+      process.env.EMAIL_PORT &&
+      process.env.EMAIL_USER &&
+      process.env.EMAIL_PASS
+  );
+  if (!isConfigured) return null;
+
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: Number(process.env.EMAIL_PORT),
       // Port 465 uses implicit TLS; other ports use STARTTLS when available.
@@ -25,12 +33,14 @@ const transporter = isConfigured
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    })
-  : null;
+    });
+  }
+  return transporter;
+};
 
 // The "from" address. Defaults to the authenticated SMTP user when EMAIL_FROM
 // is not set.
-const FROM =
+const fromAddress = () =>
   process.env.EMAIL_FROM ||
   (process.env.EMAIL_USER
     ? `LibreNet Library <${process.env.EMAIL_USER}>`
@@ -42,7 +52,8 @@ const FROM =
  * @param {{ to: string, subject: string, html: string, text?: string }} opts
  */
 const sendEmail = async ({ to, subject, html, text }) => {
-  if (!isConfigured) {
+  const mailer = getTransporter();
+  if (!mailer) {
     console.log('\n[sendEmail] EMAIL_* env vars not set — logging email instead:');
     console.log(`  To:      ${to}`);
     console.log(`  Subject: ${subject}`);
@@ -50,8 +61,8 @@ const sendEmail = async ({ to, subject, html, text }) => {
     return { mocked: true };
   }
 
-  const info = await transporter.sendMail({
-    from: FROM,
+  const info = await mailer.sendMail({
+    from: fromAddress(),
     to,
     subject,
     html,
