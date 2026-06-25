@@ -8,6 +8,7 @@ const createTransport = () =>
     host: process.env.EMAIL_HOST,
     port: Number(process.env.EMAIL_PORT) || 587,
     secure: Number(process.env.EMAIL_PORT) === 465,
+    family: 4, // force IPv4 — avoids IPv6 routing issues on some networks
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
