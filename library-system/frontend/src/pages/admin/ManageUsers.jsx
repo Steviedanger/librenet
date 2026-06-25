@@ -38,6 +38,31 @@ const ManageUsers = () => {
     }
   };
 
+  const verify = async (u) => {
+    setBusyId(u._id);
+    try {
+      const { user: updated } = await bookService.verifyUser(u._id);
+      setUsers((prev) => prev.map((x) => (x._id === updated._id ? updated : x)));
+    } catch {
+      /* ignore */
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleRole = async (u) => {
+    const nextRole = u.role === 'admin' ? 'student' : 'admin';
+    setBusyId(u._id);
+    try {
+      const { user: updated } = await bookService.setUserRole(u._id, nextRole);
+      setUsers((prev) => prev.map((x) => (x._id === updated._id ? updated : x)));
+    } catch {
+      /* ignore */
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const filtered = users.filter(
     (u) =>
       u.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -93,7 +118,19 @@ const ManageUsers = () => {
                       {u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-cream-300">{u.isVerified ? '✓' : '—'}</td>
+                  <td className="px-4 py-3">
+                    {u.isVerified ? (
+                      <span className="text-forest-300">✓</span>
+                    ) : (
+                      <button
+                        onClick={() => verify(u)}
+                        className="btn-outline px-3 py-1 text-xs"
+                        disabled={busyId === u._id}
+                      >
+                        {busyId === u._id ? '…' : 'Verify'}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-cream-300">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3">
                     <span className={`badge ${u.isActive ? 'bg-forest-500/20 text-forest-300' : 'bg-red-500/20 text-red-300'}`}>
@@ -104,13 +141,22 @@ const ManageUsers = () => {
                     {u._id === me?._id ? (
                       <span className="text-xs text-cream-300/50">You</span>
                     ) : (
-                      <button
-                        onClick={() => toggleStatus(u)}
-                        className={`px-3 py-1 text-xs ${u.isActive ? 'btn-danger' : 'btn-outline'}`}
-                        disabled={busyId === u._id}
-                      >
-                        {busyId === u._id ? '…' : u.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => toggleRole(u)}
+                          className="btn-outline px-3 py-1 text-xs"
+                          disabled={busyId === u._id}
+                        >
+                          {busyId === u._id ? '…' : u.role === 'admin' ? 'Make student' : 'Make admin'}
+                        </button>
+                        <button
+                          onClick={() => toggleStatus(u)}
+                          className={`px-3 py-1 text-xs ${u.isActive ? 'btn-danger' : 'btn-outline'}`}
+                          disabled={busyId === u._id}
+                        >
+                          {busyId === u._id ? '…' : u.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
