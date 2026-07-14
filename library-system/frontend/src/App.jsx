@@ -18,6 +18,7 @@ import Profile from './pages/Profile.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import ManageBooks from './pages/admin/ManageBooks.jsx';
 import ManageUsers from './pages/admin/ManageUsers.jsx';
+import ManageFines from './pages/admin/ManageFines.jsx';
 
 function App() {
   const { loading } = useAuth();
@@ -95,6 +96,14 @@ function App() {
             element={
               <ProtectedRoute requireAdmin>
                 <ManageUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/fines"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ManageFines />
               </ProtectedRoute>
             }
           />

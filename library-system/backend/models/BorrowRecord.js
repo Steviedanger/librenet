@@ -22,6 +22,12 @@ const borrowRecordSchema = new mongoose.Schema(
       enum: ['active', 'returned', 'overdue'],
       default: 'active',
     },
+    // Fine tracking (amounts in GHS). fineAmount is recalculated while a book
+    // is overdue and frozen once the book is returned.
+    fineAmount: { type: Number, default: 0 },
+    finePaid: { type: Boolean, default: false },
+    finePaidAt: { type: Date, default: null },
+    finePaidBy: { type: String, default: '' },
   },
   { timestamps: true }
 );
