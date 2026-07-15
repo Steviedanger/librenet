@@ -84,6 +84,19 @@ export const getBookById = async (req, res, next) => {
   }
 };
 
+const DUPLICATE_BOOK_MESSAGE =
+  'A book with this title and author already exists in the library.';
+
+/**
+ * Case-insensitive lookup for an existing title + author pair, using the
+ * collated unique index. `excludeId` skips the book being edited.
+ */
+const findDuplicateBook = (title, author, excludeId = null) => {
+  const filter = { title: String(title).trim(), author: String(author).trim() };
+  if (excludeId) filter._id = { $ne: excludeId };
+  return Book.findOne(filter).collation({ locale: 'en', strength: 2 });
+};
+
 /**
  * POST /api/books (admin) — create a book with optional cover + PDF uploads.
  */
@@ -103,6 +116,11 @@ export const createBook = async (req, res, next) => {
       return res.status(400).json({
         message: 'Title, author, genre and published year are required',
       });
+    }
+
+    // Checked before uploads so a rejected duplicate never saves files.
+    if (await findDuplicateBook(title, author)) {
+      return res.status(409).json({ message: DUPLICATE_BOOK_MESSAGE });
     }
 
     let cover = { url: '', publicId: '' };
@@ -133,6 +151,10 @@ export const createBook = async (req, res, next) => {
 
     res.status(201).json({ book });
   } catch (error) {
+    // Unique index safety net for concurrent submissions of the same book.
+    if (error.code === 11000) {
+      return res.status(409).json({ message: DUPLICATE_BOOK_MESSAGE });
+    }
     next(error);
   }
 };
@@ -156,6 +178,13 @@ export const updateBook = async (req, res, next) => {
     fields.forEach((f) => {
       if (req.body[f] !== undefined) book[f] = req.body[f];
     });
+
+    // Renaming must not collide with another existing title + author pair.
+    if (req.body.title !== undefined || req.body.author !== undefined) {
+      if (await findDuplicateBook(book.title, book.author, book._id)) {
+        return res.status(409).json({ message: DUPLICATE_BOOK_MESSAGE });
+      }
+    }
 
     // Adjust available copies in step with any change to total copies
     if (req.body.totalCopies !== undefined) {
@@ -181,6 +210,9 @@ export const updateBook = async (req, res, next) => {
     await book.save();
     res.json({ book });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: DUPLICATE_BOOK_MESSAGE });
+    }
     next(error);
   }
 };

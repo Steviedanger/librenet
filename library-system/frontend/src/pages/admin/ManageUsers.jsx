@@ -66,7 +66,8 @@ const ManageUsers = () => {
   const filtered = users.filter(
     (u) =>
       u.name.toLowerCase().includes(query.toLowerCase()) ||
-      u.email.toLowerCase().includes(query.toLowerCase())
+      u.email.toLowerCase().includes(query.toLowerCase()) ||
+      (u.libraryId || '').toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -78,7 +79,7 @@ const ManageUsers = () => {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name or email…"
+          placeholder="Search name, email or library ID…"
           aria-label="Search users"
           className="input max-w-xs"
         />
@@ -110,6 +111,11 @@ const ManageUsers = () => {
                       <div className="min-w-0">
                         <div className="truncate text-cream-100">{u.name}</div>
                         <div className="truncate text-xs text-cream-300/70">{u.email}</div>
+                        {u.role === 'student' && (
+                          <div className="truncate font-mono text-xs text-forest-300">
+                            {u.libraryId || '—'}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>

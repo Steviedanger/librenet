@@ -22,5 +22,12 @@ const bookSchema = new mongoose.Schema(
 // Text index to support search across title, author and genre
 bookSchema.index({ title: 'text', author: 'text', genre: 'text' });
 
+// Prevent duplicate catalogue entries: one book per title + author pair.
+// strength 2 collation makes the uniqueness check case-insensitive.
+bookSchema.index(
+  { title: 1, author: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
+
 const Book = mongoose.model('Book', bookSchema);
 export default Book;

@@ -78,6 +78,11 @@ const Dashboard = () => {
             Welcome, {user?.name?.split(' ')[0]}
           </h1>
           <p className="mt-1 text-sm text-cream-300">Your reading at a glance.</p>
+          {user?.libraryId && (
+            <span className="badge mt-2 border border-forest-300/30 bg-forest-500/15 font-mono text-sm text-forest-300">
+              Library ID · {user.libraryId}
+            </span>
+          )}
         </div>
         <Link to="/profile" className="btn-outline text-sm">Account settings</Link>
       </div>
