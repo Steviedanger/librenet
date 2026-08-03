@@ -13,7 +13,10 @@ import bookRoutes from './routes/bookRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import borrowRoutes from './routes/borrowRoutes.js';
 import fineRoutes from './routes/fineRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+
 import { startFineScheduler } from './utils/fineScheduler.js';
+import { startNotificationScheduler } from './utils/notificationScheduler.js';
 
 dotenv.config();
 
@@ -82,6 +85,7 @@ app.use('/api/books', bookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/borrow', borrowRoutes);
 app.use('/api/fines', fineRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -105,4 +109,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   // Keep overdue fines up to date in the background.
   startFineScheduler();
+  // Start automated notification checks for upcoming due dates & overdue items.
+  startNotificationScheduler();
 });

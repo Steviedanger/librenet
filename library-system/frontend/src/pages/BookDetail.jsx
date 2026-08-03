@@ -50,7 +50,8 @@ const BookDetail = () => {
     };
   }, [id, isAuthenticated]);
 
-  const requireLogin = () => navigate('/login', { state: { from: { pathname: `/books/${id}` } } });
+  const requireLogin = () =>
+    navigate('/login', { state: { from: { pathname: `/books/${id}` } } });
 
   const handleBorrow = async () => {
     if (!isAuthenticated) return requireLogin();
@@ -61,7 +62,11 @@ const BookDetail = () => {
       setBook((b) => ({ ...b, availableCopies: b.availableCopies - 1 }));
       setAction({ busy: false, msg: 'Borrowed! Due in 14 days.', err: '' });
     } catch (err) {
-      setAction({ busy: false, msg: '', err: err.response?.data?.message || 'Could not borrow' });
+      setAction({
+        busy: false,
+        msg: '',
+        err: err.response?.data?.message || 'Could not borrow',
+      });
     }
   };
 
@@ -74,7 +79,11 @@ const BookDetail = () => {
       setBook((b) => ({ ...b, availableCopies: b.availableCopies + 1 }));
       setAction({ busy: false, msg: 'Returned. Thanks!', err: '' });
     } catch (err) {
-      setAction({ busy: false, msg: '', err: err.response?.data?.message || 'Could not return' });
+      setAction({
+        busy: false,
+        msg: '',
+        err: err.response?.data?.message || 'Could not return',
+      });
     }
   };
 
@@ -93,7 +102,9 @@ const BookDetail = () => {
     return (
       <div className="mx-auto max-w-2xl px-4 py-24 text-center">
         <p className="text-red-300">{error || 'Book not found'}</p>
-        <Link to="/library" className="btn-outline mt-5">Back to library</Link>
+        <Link to="/library" className="btn-outline mt-5">
+          Back to library
+        </Link>
       </div>
     );
 
@@ -129,7 +140,13 @@ const BookDetail = () => {
           <h1 className="mt-3 font-serif text-3xl md:text-4xl">{book.title}</h1>
           <p className="mt-1 text-lg text-cream-300">by {book.author}</p>
 
-          <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+          <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-cream-300/50">ISBN</dt>
+              <dd className="font-mono text-cream-100">
+                {book.isbn || '—'}
+              </dd>
+            </div>
             <div>
               <dt className="text-cream-300/50">Published</dt>
               <dd className="text-cream-100">{book.publishedYear}</dd>
@@ -137,7 +154,9 @@ const BookDetail = () => {
             <div>
               <dt className="text-cream-300/50">Availability</dt>
               <dd className={available ? 'text-forest-300' : 'text-red-300'}>
-                {available ? `${book.availableCopies} of ${book.totalCopies}` : 'None available'}
+                {available
+                  ? `${book.availableCopies} of ${book.totalCopies}`
+                  : 'None available'}
               </dd>
             </div>
             {book.pageCount > 0 && (
@@ -156,7 +175,9 @@ const BookDetail = () => {
             <p
               role="status"
               className={`mt-4 rounded-lg px-3 py-2 text-sm ${
-                action.err ? 'bg-red-500/15 text-red-300' : 'bg-forest-500/15 text-forest-300'
+                action.err
+                  ? 'bg-red-500/15 text-red-300'
+                  : 'bg-forest-500/15 text-forest-300'
               }`}
             >
               {action.err || action.msg}
@@ -165,7 +186,11 @@ const BookDetail = () => {
 
           <div className="mt-6 flex flex-wrap gap-3">
             {activeRecord ? (
-              <button onClick={handleReturn} className="btn-outline" disabled={action.busy}>
+              <button
+                onClick={handleReturn}
+                className="btn-outline"
+                disabled={action.busy}
+              >
                 {action.busy ? 'Working…' : 'Return book'}
               </button>
             ) : (
@@ -174,7 +199,11 @@ const BookDetail = () => {
                 className="btn-primary"
                 disabled={action.busy || !available}
               >
-                {available ? (action.busy ? 'Working…' : 'Borrow for 14 days') : 'Unavailable'}
+                {available
+                  ? action.busy
+                    ? 'Working…'
+                    : 'Borrow for 14 days'
+                  : 'Unavailable'}
               </button>
             )}
 
@@ -184,7 +213,11 @@ const BookDetail = () => {
               </Link>
             )}
 
-            <button onClick={handleBookmark} className="btn-ghost" aria-pressed={bookmarked}>
+            <button
+              onClick={handleBookmark}
+              className="btn-ghost"
+              aria-pressed={bookmarked}
+            >
               <span className={bookmarked ? 'text-forest-300' : ''}>
                 {bookmarked ? '★ Bookmarked' : '☆ Bookmark'}
               </span>

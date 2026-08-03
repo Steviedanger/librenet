@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth.js';
 import { resolveAsset, initials } from '../utils/helpers.js';
+import NotificationBell from './NotificationBell.jsx';
 
 const navLinkClass = ({ isActive }) =>
   `px-3 py-2 text-sm font-medium transition-colors ${
@@ -55,6 +56,9 @@ const Navbar = () => {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
+              {/* Notification Bell Icon */}
+              <NotificationBell />
+
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-full border border-cream-300/15 py-1 pl-1 pr-3 transition-colors hover:border-forest-300"
@@ -74,6 +78,7 @@ const Navbar = () => {
                   {user?.name?.split(' ')[0]}
                 </span>
               </Link>
+
               <button onClick={handleLogout} className="btn-ghost text-sm">
                 Logout
               </button>
@@ -90,58 +95,109 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="rounded-lg p-2 text-cream-200 md:hidden"
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            {menuOpen ? (
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            ) : (
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            )}
-          </svg>
-        </button>
+        {/* Mobile items: Notification bell + menu toggle */}
+        <div className="flex items-center gap-2 md:hidden">
+          {isAuthenticated && <NotificationBell />}
+          <button
+            className="rounded-lg p-2 text-cream-200"
+            aria-label="Toggle menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              {menuOpen ? (
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              ) : (
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile menu */}
       {menuOpen && (
         <div className="space-y-1 border-t border-cream-300/10 px-4 py-3 md:hidden">
-          <NavLink to="/" className={navLinkClass} end onClick={() => setMenuOpen(false)}>
+          <NavLink
+            to="/"
+            className={navLinkClass}
+            end
+            onClick={() => setMenuOpen(false)}
+          >
             <span className="block py-1">Home</span>
           </NavLink>
-          <NavLink to="/library" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+          <NavLink
+            to="/library"
+            className={navLinkClass}
+            onClick={() => setMenuOpen(false)}
+          >
             <span className="block py-1">Library</span>
           </NavLink>
           {isAuthenticated && (
-            <NavLink to="/dashboard" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            <NavLink
+              to="/dashboard"
+              className={navLinkClass}
+              onClick={() => setMenuOpen(false)}
+            >
               <span className="block py-1">Dashboard</span>
             </NavLink>
           )}
           {isAuthenticated && (
-            <NavLink to="/profile" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            <NavLink
+              to="/profile"
+              className={navLinkClass}
+              onClick={() => setMenuOpen(false)}
+            >
               <span className="block py-1">Profile</span>
             </NavLink>
           )}
           {isAdmin && (
-            <NavLink to="/admin" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+            <NavLink
+              to="/admin"
+              className={navLinkClass}
+              onClick={() => setMenuOpen(false)}
+            >
               <span className="block py-1">Admin</span>
             </NavLink>
           )}
           <div className="pt-2">
             {isAuthenticated ? (
-              <button onClick={handleLogout} className="btn-outline w-full text-sm">
+              <button
+                onClick={handleLogout}
+                className="btn-outline w-full text-sm"
+              >
                 Logout
               </button>
             ) : (
               <div className="flex gap-2">
-                <Link to="/login" className="btn-outline flex-1 text-sm" onClick={() => setMenuOpen(false)}>
+                <Link
+                  to="/login"
+                  className="btn-outline flex-1 text-sm"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Login
                 </Link>
-                <Link to="/register" className="btn-primary flex-1 text-sm" onClick={() => setMenuOpen(false)}>
+                <Link
+                  to="/register"
+                  className="btn-primary flex-1 text-sm"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Join
                 </Link>
               </div>

@@ -15,12 +15,22 @@ const bookSchema = new mongoose.Schema(
     availableCopies: { type: Number, default: 1, min: 0 },
     totalBorrows: { type: Number, default: 0 },
     pageCount: { type: Number, default: 0 },
+    isbn: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true,
+      validate: {
+        validator: (v) => !v || /^(?:\d{10}|\d{13})$/.test(v.replace(/-/g, '')),
+        message: 'ISBN must be 10 or 13 digits',
+      },
+    },
   },
   { timestamps: true }
 );
 
-// Text index to support search across title, author and genre
-bookSchema.index({ title: 'text', author: 'text', genre: 'text' });
+// Text index to support search across title, author, genre and isbn
+bookSchema.index({ title: 'text', author: 'text', genre: 'text', isbn: 'text' });
 
 // Prevent duplicate catalogue entries: one book per title + author pair.
 // strength 2 collation makes the uniqueness check case-insensitive.

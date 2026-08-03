@@ -12,13 +12,14 @@ const EMPTY = {
   publishedYear: new Date().getFullYear(),
   totalCopies: 1,
   pageCount: 0,
+  isbn: '',
 };
 
 const ManageBooks = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null); // book being edited, or null
+  const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState({ coverImage: null, pdfFile: null });
   const [status, setStatus] = useState({ busy: false, err: '' });
@@ -55,6 +56,7 @@ const ManageBooks = () => {
       publishedYear: book.publishedYear,
       totalCopies: book.totalCopies,
       pageCount: book.pageCount || 0,
+      isbn: book.isbn || '',
     });
     setFiles({ coverImage: null, pdfFile: null });
     setStatus({ busy: false, err: '' });
@@ -106,6 +108,7 @@ const ManageBooks = () => {
             <thead className="bg-navy-800 text-cream-300/70">
               <tr>
                 <th className="px-4 py-3 font-medium">Book</th>
+                <th className="px-4 py-3 font-medium">ISBN</th>
                 <th className="px-4 py-3 font-medium">Genre</th>
                 <th className="px-4 py-3 font-medium">Year</th>
                 <th className="px-4 py-3 font-medium">Copies</th>
@@ -128,6 +131,9 @@ const ManageBooks = () => {
                         <div className="truncate text-xs text-cream-300/70">{b.author}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-4 py-3 text-cream-300 text-xs font-mono">
+                    {b.isbn || <span className="text-cream-300/40">—</span>}
                   </td>
                   <td className="px-4 py-3 text-cream-300">{b.genre}</td>
                   <td className="px-4 py-3 text-cream-300">{b.publishedYear}</td>
@@ -178,6 +184,21 @@ const ManageBooks = () => {
                 <input id="b-genre" className="input" value={form.genre} onChange={field('genre')} required />
               </div>
             </div>
+
+            <div>
+              <label className="label" htmlFor="b-isbn">
+                ISBN <span className="text-cream-300/50 text-xs">(optional — 10 or 13 digits)</span>
+              </label>
+              <input
+                id="b-isbn"
+                className="input font-mono"
+                value={form.isbn}
+                onChange={field('isbn')}
+                placeholder="e.g. 9780061996139"
+                maxLength={17}
+              />
+            </div>
+
             <div>
               <label className="label" htmlFor="b-desc">Description</label>
               <textarea id="b-desc" rows={3} className="input" value={form.description} onChange={field('description')} />

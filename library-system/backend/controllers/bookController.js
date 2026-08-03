@@ -29,7 +29,12 @@ export const getBooks = async (req, res, next) => {
 
     if (q.trim()) {
       const regex = new RegExp(q.trim(), 'i');
-      filter.$or = [{ title: regex }, { author: regex }, { genre: regex }];
+      filter.$or = [
+        { title: regex },
+        { author: regex },
+        { genre: regex },
+        { isbn: regex },
+      ];
     }
     if (genre) filter.genre = genre;
     if (year) filter.publishedYear = Number(year);
@@ -110,6 +115,7 @@ export const createBook = async (req, res, next) => {
       publishedYear,
       totalCopies = 1,
       pageCount = 0,
+      isbn = '',
     } = req.body;
 
     if (!title || !author || !genre || !publishedYear) {
@@ -121,6 +127,15 @@ export const createBook = async (req, res, next) => {
     // Checked before uploads so a rejected duplicate never saves files.
     if (await findDuplicateBook(title, author)) {
       return res.status(409).json({ message: DUPLICATE_BOOK_MESSAGE });
+    }
+
+    // Check duplicate ISBN if provided
+    if (isbn) {
+      const cleanIsbn = isbn.replace(/-/g, '');
+      const existingIsbn = await Book.findOne({ isbn: cleanIsbn });
+      if (existingIsbn) {
+        return res.status(409).json({ message: 'A book with this ISBN already exists.' });
+      }
     }
 
     let cover = { url: '', publicId: '' };
@@ -143,6 +158,7 @@ export const createBook = async (req, res, next) => {
       totalCopies: copies,
       availableCopies: copies,
       pageCount: Number(pageCount) || 0,
+      isbn: isbn ? isbn.replace(/-/g, '') : undefined,
       coverImage: cover.url,
       coverPublicId: cover.publicId,
       pdfFile: pdf.url,
@@ -178,6 +194,23 @@ export const updateBook = async (req, res, next) => {
     fields.forEach((f) => {
       if (req.body[f] !== undefined) book[f] = req.body[f];
     });
+
+    // Handle ISBN update
+    if (req.body.isbn !== undefined) {
+      const cleanIsbn = req.body.isbn.replace(/-/g, '');
+      if (cleanIsbn) {
+        const existingIsbn = await Book.findOne({
+          isbn: cleanIsbn,
+          _id: { $ne: book._id },
+        });
+        if (existingIsbn) {
+          return res.status(409).json({ message: 'A book with this ISBN already exists.' });
+        }
+        book.isbn = cleanIsbn;
+      } else {
+        book.isbn = undefined;
+      }
+    }
 
     // Renaming must not collide with another existing title + author pair.
     if (req.body.title !== undefined || req.body.author !== undefined) {
