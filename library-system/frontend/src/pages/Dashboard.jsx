@@ -111,8 +111,7 @@ const Dashboard = () => {
                   You have outstanding fines: {formatGHS(fines.total)}
                 </p>
                 <p className="text-sm text-red-300/80">
-                  Please visit the library to clear your fines before borrowing
-                  more books.
+                  Please settle your outstanding fines to restore full account borrowing privileges.
                 </p>
               </div>
             </div>
@@ -197,7 +196,7 @@ const FinesSection = ({ fines, total }) => (
       </span>
     </div>
     <p className="mt-1 text-sm text-cream-300/70">
-      Please visit the library to clear your fines before borrowing more books.
+      Please pay your outstanding fine balance to restore full borrowing access to your account.
     </p>
 
     <div className="mt-4 overflow-x-auto rounded-xl border border-red-500/20">
