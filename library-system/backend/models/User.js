@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import Counter from './Counter.js';
 
 const bookmarkSchema = new mongoose.Schema(
   {
@@ -21,6 +22,9 @@ const progressSchema = new mongoose.Schema(
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    // Auto-generated on first save, e.g. "LIB-00001". sparse so any legacy
+    // users without one don't collide on the unique index.
+    libraryId: { type: String, unique: true, sparse: true, index: true },
     email: {
       type: String,
       required: true,
@@ -42,6 +46,19 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Assign a unique, sequential library ID (LIB-00001, LIB-00002, …) on the
+// first save, from an atomic counter so concurrent registrations never clash.
+userSchema.pre('save', async function (next) {
+  if (this.libraryId) return next();
+  try {
+    const seq = await Counter.next('libraryId');
+    this.libraryId = `LIB-${String(seq).padStart(5, '0')}`;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Hash password whenever it is set/changed
 userSchema.pre('save', async function (next) {

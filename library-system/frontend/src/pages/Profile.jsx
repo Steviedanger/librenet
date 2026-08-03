@@ -55,6 +55,20 @@ const Profile = () => {
       <h1 className="font-serif text-3xl md:text-4xl">Account settings</h1>
       <p className="mt-1 text-sm text-cream-300">{user?.email}</p>
 
+      {user?.libraryId && (
+        <div className="card mt-4 flex items-center justify-between gap-3 border-forest-300/30 p-4">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-cream-300/60">
+              Library ID
+            </div>
+            <div className="font-mono text-2xl font-semibold text-forest-300">
+              {user.libraryId}
+            </div>
+          </div>
+          <span className="text-3xl" aria-hidden="true">🪪</span>
+        </div>
+      )}
+
       <form onSubmit={saveProfile} className="card mt-6 space-y-6 p-6">
         {(status.msg || status.err) && (
           <p
