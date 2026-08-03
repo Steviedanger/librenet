@@ -23,6 +23,7 @@ const ManageBooks = () => {
   const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState({ coverImage: null, pdfFile: null });
   const [status, setStatus] = useState({ busy: false, err: '' });
+  const [fetchingIsbn, setFetchingIsbn] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -63,6 +64,50 @@ const ManageBooks = () => {
     setShowForm(true);
   };
 
+  const fetchBookByIsbn = async () => {
+    const cleanIsbn = form.isbn.replace(/[- ]/g, '').trim();
+    if (!cleanIsbn) {
+      setStatus({ busy: false, err: 'Please enter an ISBN first.' });
+      return;
+    }
+
+    setFetchingIsbn(true);
+    setStatus({ busy: false, err: '' });
+
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`
+      );
+      const data = await res.json();
+
+      if (!data.items || data.items.length === 0) {
+        setStatus({
+          busy: false,
+          err: 'No book found for this ISBN in Google Books database.',
+        });
+        return;
+      }
+
+      const info = data.items[0].volumeInfo;
+
+      setForm((prev) => ({
+        ...prev,
+        title: info.title || prev.title,
+        author: info.authors ? info.authors.join(', ') : prev.author,
+        genre: info.categories ? info.categories[0] : prev.genre,
+        description: info.description || prev.description,
+        publishedYear: info.publishedDate
+          ? parseInt(info.publishedDate.substring(0, 4))
+          : prev.publishedYear,
+        pageCount: info.pageCount || prev.pageCount,
+      }));
+    } catch (err) {
+      setStatus({ busy: false, err: 'Failed to fetch details from Google Books.' });
+    } finally {
+      setFetchingIsbn(false);
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setStatus({ busy: true, err: '' });
@@ -78,7 +123,10 @@ const ManageBooks = () => {
       setShowForm(false);
       await load();
     } catch (err) {
-      setStatus({ busy: false, err: err.response?.data?.message || 'Save failed' });
+      setStatus({
+        busy: false,
+        err: err.response?.data?.message || 'Save failed',
+      });
     }
   };
 
@@ -94,10 +142,14 @@ const ManageBooks = () => {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link to="/admin" className="text-sm text-forest-300 hover:underline">← Admin</Link>
+          <Link to="/admin" className="text-sm text-forest-300 hover:underline">
+            ← Admin
+          </Link>
           <h1 className="font-serif text-3xl md:text-4xl">Manage books</h1>
         </div>
-        <button onClick={openCreate} className="btn-primary text-sm">+ Add book</button>
+        <button onClick={openCreate} className="btn-primary text-sm">
+          + Add book
+        </button>
       </div>
 
       {loading ? (
@@ -122,27 +174,47 @@ const ManageBooks = () => {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {b.coverImage ? (
-                        <img src={resolveAsset(b.coverImage)} alt="" className="h-12 w-8 rounded object-cover" />
+                        <img
+                          src={resolveAsset(b.coverImage)}
+                          alt=""
+                          className="h-12 w-8 rounded object-cover"
+                        />
                       ) : (
-                        <div className="flex h-12 w-8 items-center justify-center rounded bg-navy-700">📕</div>
+                        <div className="flex h-12 w-8 items-center justify-center rounded bg-navy-700">
+                          📕
+                        </div>
                       )}
                       <div className="min-w-0">
                         <div className="truncate text-cream-100">{b.title}</div>
-                        <div className="truncate text-xs text-cream-300/70">{b.author}</div>
+                        <div className="truncate text-xs text-cream-300/70">
+                          {b.author}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-cream-300 text-xs font-mono">
+                  <td className="px-4 py-3 font-mono text-xs text-cream-300">
                     {b.isbn || <span className="text-cream-300/40">—</span>}
                   </td>
                   <td className="px-4 py-3 text-cream-300">{b.genre}</td>
                   <td className="px-4 py-3 text-cream-300">{b.publishedYear}</td>
-                  <td className="px-4 py-3 text-cream-300">{b.availableCopies}/{b.totalCopies}</td>
+                  <td className="px-4 py-3 text-cream-300">
+                    {b.availableCopies}/{b.totalCopies}
+                  </td>
                   <td className="px-4 py-3 text-cream-300">{b.totalBorrows}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(b)} className="btn-ghost px-3 py-1 text-xs">Edit</button>
-                      <button onClick={() => remove(b)} className="btn-danger px-3 py-1 text-xs">Delete</button>
+                      <button
+                        onClick={() => openEdit(b)}
+                        className="btn-ghost px-3 py-1 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => remove(b)}
+                        className="btn-danger px-3 py-1 text-xs"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -160,71 +232,185 @@ const ManageBooks = () => {
           aria-modal="true"
           onClick={(e) => e.target === e.currentTarget && setShowForm(false)}
         >
-          <form onSubmit={submit} className="card my-8 w-full max-w-lg space-y-4 p-6">
+          <form
+            onSubmit={submit}
+            className="card my-8 w-full max-w-lg space-y-4 p-6"
+          >
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-2xl">{editing ? 'Edit book' : 'Add book'}</h2>
-              <button type="button" onClick={() => setShowForm(false)} className="text-cream-300 hover:text-cream-100" aria-label="Close">✕</button>
+              <h2 className="font-serif text-2xl">
+                {editing ? 'Edit book' : 'Add book'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-cream-300 hover:text-cream-100"
+                aria-label="Close"
+              >
+                ✕
+              </button>
             </div>
 
             {status.err && (
-              <p role="alert" className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300">{status.err}</p>
+              <p
+                role="alert"
+                className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300"
+              >
+                {status.err}
+              </p>
             )}
 
+            {/* ISBN with Auto-Fill button */}
             <div>
-              <label className="label" htmlFor="b-title">Title</label>
-              <input id="b-title" className="input" value={form.title} onChange={field('title')} required />
+              <label className="label" htmlFor="b-isbn">
+                ISBN <span className="text-xs text-cream-300/50">(10 or 13 digits)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="b-isbn"
+                  className="input font-mono flex-1"
+                  value={form.isbn}
+                  onChange={field('isbn')}
+                  placeholder="e.g. 9780061996139"
+                  maxLength={17}
+                />
+                <button
+                  type="button"
+                  onClick={fetchBookByIsbn}
+                  disabled={fetchingIsbn || !form.isbn.trim()}
+                  className="btn-outline whitespace-nowrap text-xs"
+                >
+                  {fetchingIsbn ? 'Searching…' : '🔍 Fetch Info'}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="b-title">
+                Title
+              </label>
+              <input
+                id="b-title"
+                className="input"
+                value={form.title}
+                onChange={field('title')}
+                required
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label" htmlFor="b-author">Author</label>
-                <input id="b-author" className="input" value={form.author} onChange={field('author')} required />
+                <label className="label" htmlFor="b-author">
+                  Author
+                </label>
+                <input
+                  id="b-author"
+                  className="input"
+                  value={form.author}
+                  onChange={field('author')}
+                  required
+                />
               </div>
               <div>
-                <label className="label" htmlFor="b-genre">Genre</label>
-                <input id="b-genre" className="input" value={form.genre} onChange={field('genre')} required />
+                <label className="label" htmlFor="b-genre">
+                  Genre
+                </label>
+                <input
+                  id="b-genre"
+                  className="input"
+                  value={form.genre}
+                  onChange={field('genre')}
+                  required
+                />
               </div>
             </div>
 
             <div>
-              <label className="label" htmlFor="b-isbn">
-                ISBN <span className="text-cream-300/50 text-xs">(optional — 10 or 13 digits)</span>
+              <label className="label" htmlFor="b-desc">
+                Description
               </label>
-              <input
-                id="b-isbn"
-                className="input font-mono"
-                value={form.isbn}
-                onChange={field('isbn')}
-                placeholder="e.g. 9780061996139"
-                maxLength={17}
+              <textarea
+                id="b-desc"
+                rows={3}
+                className="input"
+                value={form.description}
+                onChange={field('description')}
               />
-            </div>
-
-            <div>
-              <label className="label" htmlFor="b-desc">Description</label>
-              <textarea id="b-desc" rows={3} className="input" value={form.description} onChange={field('description')} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="label" htmlFor="b-year">Year</label>
-                <input id="b-year" type="number" className="input" value={form.publishedYear} onChange={field('publishedYear')} required />
+                <label className="label" htmlFor="b-year">
+                  Year
+                </label>
+                <input
+                  id="b-year"
+                  type="number"
+                  className="input"
+                  value={form.publishedYear}
+                  onChange={field('publishedYear')}
+                  required
+                />
               </div>
               <div>
-                <label className="label" htmlFor="b-copies">Copies</label>
-                <input id="b-copies" type="number" min={0} className="input" value={form.totalCopies} onChange={field('totalCopies')} required />
+                <label className="label" htmlFor="b-copies">
+                  Copies
+                </label>
+                <input
+                  id="b-copies"
+                  type="number"
+                  min={0}
+                  className="input"
+                  value={form.totalCopies}
+                  onChange={field('totalCopies')}
+                  required
+                />
               </div>
               <div>
-                <label className="label" htmlFor="b-pages">Pages</label>
-                <input id="b-pages" type="number" min={0} className="input" value={form.pageCount} onChange={field('pageCount')} />
+                <label className="label" htmlFor="b-pages">
+                  Pages
+                </label>
+                <input
+                  id="b-pages"
+                  type="number"
+                  min={0}
+                  className="input"
+                  value={form.pageCount}
+                  onChange={field('pageCount')}
+                />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label" htmlFor="b-cover">Cover image</label>
-                <input id="b-cover" type="file" accept="image/*" className="text-sm text-cream-300" onChange={(e) => setFiles((f) => ({ ...f, coverImage: e.target.files?.[0] || null }))} />
+                <label className="label" htmlFor="b-cover">
+                  Cover image
+                </label>
+                <input
+                  id="b-cover"
+                  type="file"
+                  accept="image/*"
+                  className="text-sm text-cream-300"
+                  onChange={(e) =>
+                    setFiles((f) => ({
+                      ...f,
+                      coverImage: e.target.files?.[0] || null,
+                    }))
+                  }
+                />
               </div>
               <div>
-                <label className="label" htmlFor="b-pdf">Book PDF</label>
-                <input id="b-pdf" type="file" accept="application/pdf" className="text-sm text-cream-300" onChange={(e) => setFiles((f) => ({ ...f, pdfFile: e.target.files?.[0] || null }))} />
+                <label className="label" htmlFor="b-pdf">
+                  Book PDF
+                </label>
+                <input
+                  id="b-pdf"
+                  type="file"
+                  accept="application/pdf"
+                  className="text-sm text-cream-300"
+                  onChange={(e) =>
+                    setFiles((f) => ({
+                      ...f,
+                      pdfFile: e.target.files?.[0] || null,
+                    }))
+                  }
+                />
               </div>
             </div>
             {editing && (
@@ -234,9 +420,23 @@ const ManageBooks = () => {
             )}
 
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
-              <button type="submit" className="btn-primary" disabled={status.busy}>
-                {status.busy ? 'Saving…' : editing ? 'Save changes' : 'Add book'}
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={status.busy}
+              >
+                {status.busy
+                  ? 'Saving…'
+                  : editing
+                  ? 'Save changes'
+                  : 'Add book'}
               </button>
             </div>
           </form>
