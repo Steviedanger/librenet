@@ -1,24 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Document, Page, pdfjs } from 'react-pdf';
 import bookService from '../services/bookService.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { resolveAsset } from '../utils/helpers.js';
 
-/**
- * In-browser PDF reader. The PDF is rendered via an <iframe> using the
- * "#page=N" fragment to jump pages. Because an iframe can't report scroll
- * position back to us, the reader exposes explicit page controls and
- * autosaves the tracked page every 30 seconds (and on unmount).
- */
+// Configure worker for PDF processing
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 const BookReader = () => {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [numPages, setNumPages] = useState(0);
   const [savedAt, setSavedAt] = useState(null);
+  const [scale, setScale] = useState(1.1);
 
-  // Keep the latest page in a ref so the autosave interval reads fresh values.
   const pageRef = useRef(1);
   const lastSavedRef = useRef(1);
 
@@ -46,7 +45,6 @@ const BookReader = () => {
     };
   }, [id]);
 
-  // Persist progress; skips the call when nothing changed.
   const saveProgress = async () => {
     if (pageRef.current === lastSavedRef.current) return;
     try {
@@ -58,7 +56,6 @@ const BookReader = () => {
     }
   };
 
-  // Autosave loop + flush on unmount.
   useEffect(() => {
     if (!data) return undefined;
     const timer = setInterval(saveProgress, 30000);
@@ -66,7 +63,6 @@ const BookReader = () => {
       clearInterval(timer);
       saveProgress();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, id]);
 
   if (loading) return <LoadingSpinner className="py-32" label="Opening book…" />;
@@ -78,12 +74,16 @@ const BookReader = () => {
       </div>
     );
 
-  const totalPages = data.pageCount || 0;
+  const totalPages = numPages || data.pageCount || 0;
   const clamp = (p) => Math.max(1, totalPages ? Math.min(totalPages, p) : p);
-  const src = `${resolveAsset(data.pdfUrl)}#page=${page}&toolbar=1&view=FitH`;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col px-4 py-4">
+    <div 
+      className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col px-4 py-4 select-none"
+      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+      onContextMenu={(e) => e.preventDefault()}
+      onCopy={(e) => e.preventDefault()}
+    >
       {/* Reader toolbar */}
       <div className="card mb-3 flex flex-wrap items-center justify-between gap-3 p-3">
         <div className="min-w-0">
@@ -94,6 +94,26 @@ const BookReader = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Zoom controls */}
+          <button 
+            onClick={() => setScale((s) => Math.max(0.7, s - 0.1))}
+            className="btn-ghost px-2 py-1 text-xs"
+            title="Zoom out"
+          >
+            -
+          </button>
+          <span className="text-xs text-cream-300/60">{Math.round(scale * 100)}%</span>
+          <button 
+            onClick={() => setScale((s) => Math.min(1.8, s + 0.1))}
+            className="btn-ghost px-2 py-1 text-xs"
+            title="Zoom in"
+          >
+            +
+          </button>
+
+          <span className="mx-1 text-cream-300/30">|</span>
+
+          {/* Page controls */}
           <button
             className="btn-ghost px-3 py-1.5 text-sm"
             onClick={() => setPage((p) => clamp(p - 1))}
@@ -135,14 +155,22 @@ const BookReader = () => {
         </p>
       )}
 
-      {/* PDF viewer */}
-      <div className="card flex-1 overflow-hidden">
-        <iframe
-          key={page} /* reload fragment so the page jump takes effect */
-          src={src}
-          title={`Reading: ${data.title}`}
-          className="h-full w-full"
-        />
+      {/* Secure PDF Canvas Viewport */}
+      <div className="card flex-1 overflow-auto flex justify-center items-start p-4 bg-gray-950">
+        <Document
+          file={resolveAsset(data.pdfUrl)}
+          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          loading={<div className="text-cream-300/60 py-12">Loading book securely…</div>}
+          error={<div className="text-red-300 py-12">Failed to load readable file.</div>}
+        >
+          <Page
+            pageNumber={page}
+            scale={scale}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            className="shadow-2xl overflow-hidden rounded-sm"
+          />
+        </Document>
       </div>
     </div>
   );
