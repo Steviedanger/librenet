@@ -29,6 +29,13 @@ export const bookService = {
   myBorrows: () => api.get('/borrow/me').then((r) => r.data),
   allBorrows: () => api.get('/borrow').then((r) => r.data),
 
+  // Fines
+  myFines: () => api.get('/fines/my-fines').then((r) => r.data),
+  allFines: (params) => api.get('/fines/all', { params }).then((r) => r.data),
+  fineSummary: () => api.get('/fines/summary').then((r) => r.data),
+  payFine: (borrowId) =>
+    api.patch(`/fines/${borrowId}/pay`).then((r) => r.data),
+
   // Bookmarks & progress
   bookmarks: () => api.get('/users/bookmarks').then((r) => r.data),
   toggleBookmark: (bookId) =>

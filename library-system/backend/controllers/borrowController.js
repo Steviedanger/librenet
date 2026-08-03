@@ -1,5 +1,6 @@
 import Book from '../models/Book.js';
 import BorrowRecord from '../models/BorrowRecord.js';
+import { calculateFine } from '../utils/fineCalculator.js';
 
 const LOAN_DAYS = 14;
 
@@ -25,6 +26,22 @@ export const borrowBook = async (req, res, next) => {
       return res
         .status(400)
         .json({ message: 'You already have this book borrowed' });
+    }
+
+    // Block borrowing while the user has any unpaid overdue fine.
+    const unpaid = await BorrowRecord.find({
+      user: req.user._id,
+      finePaid: false,
+    });
+    const now = new Date();
+    const hasOutstandingFine = unpaid.some(
+      (r) => (r.returnedAt ? r.fineAmount : calculateFine(r.dueDate, now)) > 0
+    );
+    if (hasOutstandingFine) {
+      return res.status(403).json({
+        message:
+          'You have outstanding fines. Please visit the library to pay before borrowing.',
+      });
     }
 
     const dueDate = new Date();
@@ -65,6 +82,8 @@ export const returnBook = async (req, res, next) => {
 
     record.status = 'returned';
     record.returnedAt = new Date();
+    // Freeze the accrued fine on the record at the moment of return.
+    record.fineAmount = calculateFine(record.dueDate, record.returnedAt);
     await record.save();
 
     const book = await Book.findById(record.book);
@@ -97,9 +116,13 @@ export const getMyBorrows = async (req, res, next) => {
     const overdueIds = [];
     const result = records.map((r) => {
       const obj = r.toObject();
-      if (r.status === 'active' && r.dueDate < now) {
-        obj.status = 'overdue';
-        overdueIds.push(r._id);
+      // Surface the live, still-accruing fine for books not yet returned.
+      if (r.status !== 'returned') {
+        obj.fineAmount = calculateFine(r.dueDate, now);
+        if (r.dueDate < now) {
+          obj.status = 'overdue';
+          if (r.status === 'active') overdueIds.push(r._id);
+        }
       }
       return obj;
     });

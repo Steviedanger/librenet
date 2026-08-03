@@ -35,6 +35,7 @@ const AdminDashboard = () => {
         <div className="flex gap-2">
           <Link to="/admin/books" className="btn-primary text-sm">Manage books</Link>
           <Link to="/admin/users" className="btn-outline text-sm">Manage users</Link>
+          <Link to="/admin/fines" className="btn-outline text-sm">Fines</Link>
         </div>
       </div>
 

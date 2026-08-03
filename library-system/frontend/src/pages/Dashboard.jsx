@@ -8,6 +8,7 @@ import {
   formatDate,
   daysUntil,
   statusBadgeClass,
+  formatGHS,
 } from '../utils/helpers.js';
 
 const TABS = [
@@ -24,19 +25,22 @@ const Dashboard = () => {
   const [borrows, setBorrows] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [progress, setProgress] = useState([]);
+  const [fines, setFines] = useState({ fines: [], total: 0, count: 0 });
   const [busyId, setBusyId] = useState(null);
 
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [b, bm, pr] = await Promise.all([
+      const [b, bm, pr, fn] = await Promise.all([
         bookService.myBorrows(),
         bookService.bookmarks(),
         bookService.progress(),
+        bookService.myFines(),
       ]);
       setBorrows(b.records);
       setBookmarks(bm.books);
       setProgress(pr.items);
+      setFines(fn);
     } catch {
       /* errors surface as empty states */
     } finally {
@@ -78,6 +82,26 @@ const Dashboard = () => {
         <Link to="/profile" className="btn-outline text-sm">Account settings</Link>
       </div>
 
+      {/* Outstanding fines alert */}
+      {fines.total > 0 && (
+        <div className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" aria-hidden="true">⚠️</span>
+              <div>
+                <p className="font-semibold text-red-200">
+                  You have outstanding fines: {formatGHS(fines.total)}
+                </p>
+                <p className="text-sm text-red-300/80">
+                  Please visit the library to clear your fines before borrowing
+                  more books.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick stats */}
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
@@ -92,6 +116,11 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* My Fines */}
+      {!loading && fines.fines.length > 0 && (
+        <FinesSection fines={fines.fines} total={fines.total} />
+      )}
 
       {/* Tabs */}
       <div className="mt-8 flex flex-wrap gap-2 border-b border-cream-300/10">
@@ -136,6 +165,57 @@ const EmptyState = ({ children }) => (
   <p className="py-12 text-center text-cream-300/60">{children}</p>
 );
 
+const FinesSection = ({ fines, total }) => (
+  <section className="mt-8">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h2 className="font-serif text-2xl text-red-200">My fines</h2>
+      <span className="badge bg-red-500/20 text-red-300">
+        Total due {formatGHS(total)}
+      </span>
+    </div>
+    <p className="mt-1 text-sm text-cream-300/70">
+      Please visit the library to clear your fines before borrowing more books.
+    </p>
+
+    <div className="mt-4 overflow-x-auto rounded-xl border border-red-500/20">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-navy-800 text-cream-300/70">
+          <tr>
+            <th className="px-4 py-3 font-medium">Book title</th>
+            <th className="px-4 py-3 font-medium">Due date</th>
+            <th className="px-4 py-3 font-medium">Days overdue</th>
+            <th className="px-4 py-3 font-medium text-right">Fine (GHS)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fines.map((f) => (
+            <tr key={f._id} className="border-t border-cream-300/10">
+              <td className="px-4 py-3 text-cream-100">
+                {f.book?.title || 'Deleted book'}
+              </td>
+              <td className="px-4 py-3 text-cream-300">{formatDate(f.dueDate)}</td>
+              <td className="px-4 py-3 text-red-300">{f.daysOverdue} day(s)</td>
+              <td className="px-4 py-3 text-right font-medium text-red-300">
+                {formatGHS(f.fineAmount)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-red-500/30 bg-navy-800/60">
+            <td colSpan={3} className="px-4 py-3 text-right font-medium text-cream-200">
+              Total outstanding
+            </td>
+            <td className="px-4 py-3 text-right font-semibold text-red-300">
+              {formatGHS(total)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+);
+
 const BookRow = ({ book, children }) => (
   <div className="card flex items-center gap-4 p-3">
     <Link to={`/books/${book._id}`} className="shrink-0">
@@ -178,6 +258,11 @@ const BorrowedList = ({ records, busyId, onReturn }) => {
               <span className={overdue ? 'text-red-300' : 'text-cream-300/70'}>
                 {overdue ? `${Math.abs(left)} day(s) overdue` : `${left} day(s) left`}
               </span>
+              {overdue && r.fineAmount > 0 && (
+                <span className="badge bg-red-500/20 text-red-300">
+                  Fine {formatGHS(r.fineAmount)}
+                </span>
+              )}
             </div>
             <div className="mt-2 flex gap-2">
               {r.book?.pdfFile && (

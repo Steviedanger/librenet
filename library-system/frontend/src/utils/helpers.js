@@ -28,6 +28,10 @@ export const daysUntil = (value) => {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 };
 
+/** Format a GHS currency amount, e.g. "GHS 4.50". */
+export const formatGHS = (amount = 0) =>
+  `GHS ${Number(amount || 0).toFixed(2)}`;
+
 /** Generic debounce that preserves the latest call's arguments. */
 export const debounce = (fn, wait = 400) => {
   let timer;

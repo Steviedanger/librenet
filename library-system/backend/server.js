@@ -12,6 +12,8 @@ import authRoutes from './routes/authRoutes.js';
 import bookRoutes from './routes/bookRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import borrowRoutes from './routes/borrowRoutes.js';
+import fineRoutes from './routes/fineRoutes.js';
+import { startFineScheduler } from './utils/fineScheduler.js';
 
 dotenv.config();
 
@@ -79,6 +81,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/borrow', borrowRoutes);
+app.use('/api/fines', fineRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -100,4 +103,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Keep overdue fines up to date in the background.
+  startFineScheduler();
 });
