@@ -65,21 +65,28 @@ export const register = async (req, res, next) => {
       user.email
     )}`;
 
+    // Accounts are verified manually. Resend can't deliver to arbitrary
+    // recipients without a verified domain, but it can reach the account
+    // owner's own address, so notify the admin to go verify the new user.
+    const adminEmail = process.env.ADMIN_EMAIL || 'mccarthystephen363@gmail.com';
+
     await sendEmail({
-      to: user.email,
-      subject: 'Verify your LibreNet Library account',
+      to: adminEmail,
+      subject: `New account awaiting verification: ${user.name}`,
       html: emailTemplate(
-        'Confirm your email',
-        `<p>Welcome, ${user.name}! Please confirm your email to activate your account.</p>
-         <p><a href="${verifyUrl}" style="display:inline-block;background:#9cc5a1;color:#0f1b2d;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify Email</a></p>
-         <p>Or paste this link into your browser:<br/>${verifyUrl}</p>`
+        'New account created',
+        `<p>A new reader just registered and is waiting to be verified.</p>
+         <p><strong>Name:</strong> ${user.name}<br/>
+         <strong>Email:</strong> ${user.email}</p>
+         <p>Verify them with one click:</p>
+         <p><a href="${verifyUrl}" style="display:inline-block;background:#9cc5a1;color:#0f1b2d;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold;">Verify this account</a></p>
+         <p>Or set <code>isVerified: true</code> on their user document in MongoDB.</p>`
       ),
-      text: `Verify your account: ${verifyUrl}`,
+      text: `New signup: ${user.name} (${user.email}). Verify: ${verifyUrl}`,
     });
 
     res.status(201).json({
-      message:
-        'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful. Your account is awaiting verification.',
     });
   } catch (error) {
     next(error);

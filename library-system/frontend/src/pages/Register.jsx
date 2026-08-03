@@ -47,9 +47,10 @@ const Register = () => {
 
       {status.registered ? (
         <div className="card mt-6 space-y-4 border-forest-300/30 p-6 text-center text-cream-200">
-          <p className="font-serif text-xl text-forest-300">✓ Account Created Successfully!</p>
+          <p className="font-serif text-xl text-forest-300">✓ Account created successfully!</p>
           <p className="text-sm text-cream-300">
-            Please wait a few minutes for your account to be verified. Once verified you can log in.
+            Kindly wait a few minutes for your account to be verified, then log
+            back in. You'll be able to sign in once verification is complete.
           </p>
           <Link to="/login" className="btn-primary inline-block w-full">
             Go to Login
