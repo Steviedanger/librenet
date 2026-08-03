@@ -41,6 +41,10 @@ export const bookService = {
   users: () => api.get('/users').then((r) => r.data),
   setUserStatus: (id, isActive) =>
     api.patch(`/users/${id}/status`, { isActive }).then((r) => r.data),
+  verifyUser: (id) =>
+    api.patch(`/users/${id}/verify`).then((r) => r.data),
+  setUserRole: (id, role) =>
+    api.patch(`/users/${id}/role`, { role }).then((r) => r.data),
   stats: () => api.get('/users/stats').then((r) => r.data),
 
   // Profile

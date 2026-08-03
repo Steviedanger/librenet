@@ -8,6 +8,8 @@ import {
   getProgress,
   getAllUsers,
   setUserStatus,
+  verifyUser,
+  setUserRole,
   getStats,
 } from '../controllers/userController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
@@ -34,5 +36,7 @@ router.put('/progress/:bookId', saveProgress);
 router.get('/stats', authorize('admin'), getStats);
 router.get('/', authorize('admin'), getAllUsers);
 router.patch('/:id/status', authorize('admin'), setUserStatus);
+router.patch('/:id/verify', authorize('admin'), verifyUser);
+router.patch('/:id/role', authorize('admin'), setUserRole);
 
 export default router;

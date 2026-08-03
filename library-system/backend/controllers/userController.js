@@ -189,6 +189,52 @@ export const setUserStatus = async (req, res, next) => {
 };
 
 /**
+ * PATCH /api/users/:id/verify (admin) — mark an account as verified so the
+ * user can log in, without needing to edit MongoDB by hand.
+ */
+export const verifyUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PATCH /api/users/:id/role (admin) — promote a user to admin or demote to
+ * student.
+ */
+export const setUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    if (!['student', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Role must be student or admin' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({ message: 'You cannot change your own role' });
+    }
+
+    user.role = role;
+    await user.save();
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/users/stats (admin) — dashboard summary numbers.
  */
 export const getStats = async (req, res, next) => {
