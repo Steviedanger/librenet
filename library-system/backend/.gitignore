@@ -1,0 +1,7 @@
+node_modules/
+.env
+uploads/pdfs/*
+uploads/covers/*
+!uploads/pdfs/.gitkeep
+!uploads/covers/.gitkeep
+*.log
