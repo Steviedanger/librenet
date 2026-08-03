@@ -19,12 +19,11 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import ManageBooks from './pages/admin/ManageBooks.jsx';
 import ManageUsers from './pages/admin/ManageUsers.jsx';
 import ManageFines from './pages/admin/ManageFines.jsx';
+import FineVerify from './pages/FineVerify.jsx';
 
 function App() {
   const { loading } = useAuth();
 
-  // Block the first paint until the silent refresh resolves so protected
-  // routes don't flash the login page for already-authenticated users.
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-navy-900">
@@ -70,6 +69,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fines/verify"
+            element={
+              <ProtectedRoute>
+                <FineVerify />
               </ProtectedRoute>
             }
           />

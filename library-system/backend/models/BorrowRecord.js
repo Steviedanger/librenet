@@ -28,6 +28,24 @@ const borrowRecordSchema = new mongoose.Schema(
     finePaid: { type: Boolean, default: false },
     finePaidAt: { type: Date, default: null },
     finePaidBy: { type: String, default: '' },
+
+    // Payment tracking — supports both cash (admin) and online (Paystack).
+    // All three fields are optional so existing records are never broken.
+    paymentMethod: {
+      type: String,
+      enum: ['CASH', 'ONLINE'],
+      default: null,
+    },
+    paymentReference: {
+      type: String,
+      default: null,
+      // Stores the Paystack transaction reference e.g. "trx_abc123"
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['UNPAID', 'PENDING', 'PAID', 'FAILED'],
+      default: 'UNPAID',
+    },
   },
   { timestamps: true }
 );

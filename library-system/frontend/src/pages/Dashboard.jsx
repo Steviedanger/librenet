@@ -10,6 +10,7 @@ import {
   statusBadgeClass,
   formatGHS,
 } from '../utils/helpers.js';
+import api from '../services/api.js';
 
 const TABS = [
   { key: 'borrowed', label: 'Borrowed' },
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [progress, setProgress] = useState([]);
   const [fines, setFines] = useState({ fines: [], total: 0, count: 0 });
   const [busyId, setBusyId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
 
   const loadAll = async () => {
     setLoading(true);
@@ -72,6 +74,19 @@ const Dashboard = () => {
       alert(err.response?.data?.message || 'Could not extend loan.');
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handlePayOnline = async (borrowId) => {
+    setPayingId(borrowId);
+    try {
+      const res = await api.post(`/fines/${borrowId}/initiate-payment`);
+      // Redirect to Paystack payment page
+      window.location.href = res.data.authorizationUrl;
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not initiate payment. Please try again.');
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -136,7 +151,12 @@ const Dashboard = () => {
 
       {/* My Fines */}
       {!loading && fines.fines.length > 0 && (
-        <FinesSection fines={fines.fines} total={fines.total} />
+        <FinesSection
+          fines={fines.fines}
+          total={fines.total}
+          payingId={payingId}
+          onPayOnline={handlePayOnline}
+        />
       )}
 
       {/* Tabs */}
@@ -187,7 +207,7 @@ const EmptyState = ({ children }) => (
   <p className="py-12 text-center text-cream-300/60">{children}</p>
 );
 
-const FinesSection = ({ fines, total }) => (
+const FinesSection = ({ fines, total, payingId, onPayOnline }) => (
   <section className="mt-8">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="font-serif text-2xl text-red-200">My fines</h2>
@@ -196,7 +216,7 @@ const FinesSection = ({ fines, total }) => (
       </span>
     </div>
     <p className="mt-1 text-sm text-cream-300/70">
-      Please pay your outstanding fine balance to restore full borrowing access to your account.
+      Pay your outstanding fine balance online or visit the library to pay in cash.
     </p>
 
     <div className="mt-4 overflow-x-auto rounded-xl border border-red-500/20">
@@ -207,6 +227,7 @@ const FinesSection = ({ fines, total }) => (
             <th className="px-4 py-3 font-medium">Due date</th>
             <th className="px-4 py-3 font-medium">Days overdue</th>
             <th className="px-4 py-3 font-medium text-right">Fine (GHS)</th>
+            <th className="px-4 py-3 font-medium text-right">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -220,6 +241,15 @@ const FinesSection = ({ fines, total }) => (
               <td className="px-4 py-3 text-right font-medium text-red-300">
                 {formatGHS(f.fineAmount)}
               </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  onClick={() => onPayOnline(f._id)}
+                  disabled={payingId === f._id}
+                  className="rounded-lg bg-forest-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-forest-400 disabled:opacity-50 transition-colors"
+                >
+                  {payingId === f._id ? 'Redirecting…' : '💳 Pay Online'}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -231,10 +261,16 @@ const FinesSection = ({ fines, total }) => (
             <td className="px-4 py-3 text-right font-semibold text-red-300">
               {formatGHS(total)}
             </td>
+            <td />
           </tr>
         </tfoot>
       </table>
     </div>
+
+    <p className="mt-3 text-xs text-cream-300/50">
+      💳 Online payments are processed securely via Paystack. · 
+      🏦 To pay in cash, visit the library and present your Library ID.
+    </p>
   </section>
 );
 
@@ -264,7 +300,7 @@ const BookRow = ({ book, children }) => (
 );
 
 const BorrowedList = ({ records, busyId, onReturn, onRenew }) => {
-  if (!records.length) return <EmptyState>You haven’t borrowed any books yet.</EmptyState>;
+  if (!records.length) return <EmptyState>You haven't borrowed any books yet.</EmptyState>;
   return (
     <div className="space-y-3">
       {records.map((r) => {
@@ -371,6 +407,11 @@ const HistoryList = ({ records }) => {
           <p className="mt-1 text-xs text-cream-300/70">
             Borrowed {formatDate(r.borrowedAt)} · Returned {formatDate(r.returnedAt)}
           </p>
+          {r.finePaid && (
+            <p className="text-xs text-green-400 mt-0.5">
+              ✓ Fine paid {r.paymentMethod === 'ONLINE' ? 'online' : 'in cash'} — {formatGHS(r.fineAmount)}
+            </p>
+          )}
         </BookRow>
       ))}
     </div>
