@@ -65,9 +65,11 @@ const ManageBooks = () => {
   };
 
   const fetchBookByIsbn = async () => {
-    const cleanIsbn = form.isbn.replace(/[- ]/g, '').trim();
+    // Strip hyphens, spaces, and non-ISBN characters
+    const cleanIsbn = form.isbn.replace(/[^0-9X]/gi, '').trim();
+
     if (!cleanIsbn) {
-      setStatus({ busy: false, err: 'Please enter an ISBN first.' });
+      setStatus({ busy: false, err: 'Please enter a valid ISBN first.' });
       return;
     }
 
@@ -75,34 +77,59 @@ const ManageBooks = () => {
     setStatus({ busy: false, err: '' });
 
     try {
-      const res = await fetch(
+      // 1. Try Google Books API first
+      const gResponse = await fetch(
         `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`
       );
-      const data = await res.json();
+      const gData = await gResponse.json();
 
-      if (!data.items || data.items.length === 0) {
-        setStatus({
-          busy: false,
-          err: 'No book found for this ISBN in Google Books database.',
-        });
+      if (gData.items && gData.items.length > 0) {
+        const info = gData.items[0].volumeInfo;
+        setForm((prev) => ({
+          ...prev,
+          title: info.title || prev.title,
+          author: info.authors ? info.authors.join(', ') : prev.author,
+          genre: info.categories ? info.categories[0] : prev.genre,
+          description: info.description || prev.description,
+          publishedYear: info.publishedDate
+            ? parseInt(info.publishedDate.substring(0, 4))
+            : prev.publishedYear,
+          pageCount: info.pageCount || prev.pageCount,
+        }));
+        setFetchingIsbn(false);
         return;
       }
 
-      const info = data.items[0].volumeInfo;
+      // 2. Fallback to Open Library API if Google Books returns nothing
+      const olResponse = await fetch(
+        `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`
+      );
+      const olData = await olResponse.json();
+      const olKey = `ISBN:${cleanIsbn}`;
 
-      setForm((prev) => ({
-        ...prev,
-        title: info.title || prev.title,
-        author: info.authors ? info.authors.join(', ') : prev.author,
-        genre: info.categories ? info.categories[0] : prev.genre,
-        description: info.description || prev.description,
-        publishedYear: info.publishedDate
-          ? parseInt(info.publishedDate.substring(0, 4))
-          : prev.publishedYear,
-        pageCount: info.pageCount || prev.pageCount,
-      }));
-    } catch (err) {
-      setStatus({ busy: false, err: 'Failed to fetch details from Google Books.' });
+      if (olData[olKey]) {
+        const book = olData[olKey];
+        setForm((prev) => ({
+          ...prev,
+          title: book.title || prev.title,
+          author: book.authors ? book.authors.map((a) => a.name).join(', ') : prev.author,
+          genre: book.subjects ? book.subjects[0].name : prev.genre,
+          publishedYear: book.publish_date
+            ? parseInt(book.publish_date.match(/\d{4}/)?.[0] || prev.publishedYear)
+            : prev.publishedYear,
+          pageCount: book.number_of_pages || prev.pageCount,
+        }));
+        setFetchingIsbn(false);
+        return;
+      }
+
+      // If both APIs fail
+      setStatus({
+        busy: false,
+        err: 'No book found for this ISBN in Google Books or Open Library.',
+      });
+    } catch {
+      setStatus({ busy: false, err: 'Failed to fetch details from book services.' });
     } finally {
       setFetchingIsbn(false);
     }
@@ -270,7 +297,7 @@ const ManageBooks = () => {
                   className="input font-mono flex-1"
                   value={form.isbn}
                   onChange={field('isbn')}
-                  placeholder="e.g. 9780061996139"
+                  placeholder="e.g. 9780131103627"
                   maxLength={17}
                 />
                 <button
