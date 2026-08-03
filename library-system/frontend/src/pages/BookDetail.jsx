@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import bookService from '../services/bookService.js';
 import useAuth from '../hooks/useAuth.js';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
+import ReviewSection from '../components/ReviewSection.jsx';
 import { resolveAsset } from '../utils/helpers.js';
 
 const BookDetail = () => {
@@ -17,9 +18,8 @@ const BookDetail = () => {
   const [activeRecord, setActiveRecord] = useState(null); // user's active loan
   const [action, setAction] = useState({ busy: false, msg: '', err: '' });
 
-  useEffect(() => {
+  const fetchBookData = () => {
     let active = true;
-    setLoading(true);
 
     const tasks = [bookService.get(id)];
     if (isAuthenticated) {
@@ -48,6 +48,11 @@ const BookDetail = () => {
     return () => {
       active = false;
     };
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    fetchBookData();
   }, [id, isAuthenticated]);
 
   const requireLogin = () =>
@@ -138,7 +143,17 @@ const BookDetail = () => {
         <div>
           <span className="badge bg-navy-700 text-forest-300">{book.genre}</span>
           <h1 className="mt-3 font-serif text-3xl md:text-4xl">{book.title}</h1>
-          <p className="mt-1 text-lg text-cream-300">by {book.author}</p>
+          
+          <div className="mt-1 flex items-center gap-3">
+            <p className="text-lg text-cream-300">by {book.author}</p>
+            {book.ratingsCount > 0 && (
+              <div className="flex items-center gap-1 rounded-full bg-amber-400/10 px-2.5 py-0.5 text-xs text-amber-400">
+                <span>★</span>
+                <span className="font-semibold">{book.averageRating}</span>
+                <span className="text-cream-300/50">({book.ratingsCount})</span>
+              </div>
+            )}
+          </div>
 
           <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
@@ -225,6 +240,9 @@ const BookDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Community Reviews & Ratings Section */}
+      <ReviewSection bookId={book._id} onReviewUpdated={fetchBookData} />
     </div>
   );
 };

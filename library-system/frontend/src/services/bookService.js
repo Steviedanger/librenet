@@ -26,6 +26,8 @@ export const bookService = {
   borrow: (bookId) => api.post(`/borrow/${bookId}`).then((r) => r.data),
   returnBook: (recordId) =>
     api.post(`/borrow/${recordId}/return`).then((r) => r.data),
+  renewLoan: (recordId) =>
+    api.put(`/borrow/renew/${recordId}`).then((r) => r.data), // <-- Added renewal method
   myBorrows: () => api.get('/borrow/me').then((r) => r.data),
   allBorrows: () => api.get('/borrow').then((r) => r.data),
 

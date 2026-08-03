@@ -62,6 +62,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleRenew = async (recordId) => {
+    setBusyId(recordId);
+    try {
+      const res = await bookService.renewLoan(recordId);
+      alert(res.message || 'Loan extended by 7 days!');
+      await loadAll();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not extend loan.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const handleRemoveBookmark = async (bookId) => {
     await bookService.toggleBookmark(bookId);
     setBookmarks((prev) => prev.filter((b) => b._id !== bookId));
@@ -150,7 +163,12 @@ const Dashboard = () => {
         ) : (
           <>
             {tab === 'borrowed' && (
-              <BorrowedList records={active} busyId={busyId} onReturn={handleReturn} />
+              <BorrowedList
+                records={active}
+                busyId={busyId}
+                onReturn={handleReturn}
+                onRenew={handleRenew}
+              />
             )}
             {tab === 'reading' && <ProgressList items={progress} />}
             {tab === 'bookmarks' && (
@@ -246,7 +264,7 @@ const BookRow = ({ book, children }) => (
   </div>
 );
 
-const BorrowedList = ({ records, busyId, onReturn }) => {
+const BorrowedList = ({ records, busyId, onReturn, onRenew }) => {
   if (!records.length) return <EmptyState>You haven’t borrowed any books yet.</EmptyState>;
   return (
     <div className="space-y-3">
@@ -269,7 +287,7 @@ const BorrowedList = ({ records, busyId, onReturn }) => {
                 </span>
               )}
             </div>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {r.book?.pdfFile && (
                 <Link to={`/read/${r.book._id}`} className="btn-ghost px-3 py-1 text-xs">
                   Read
@@ -280,8 +298,24 @@ const BorrowedList = ({ records, busyId, onReturn }) => {
                 className="btn-outline px-3 py-1 text-xs"
                 disabled={busyId === r._id}
               >
-                {busyId === r._id ? 'Returning…' : 'Return'}
+                {busyId === r._id ? 'Working…' : 'Return'}
               </button>
+
+              {!overdue && (
+                !r.renewed ? (
+                  <button
+                    onClick={() => onRenew(r._id)}
+                    className="btn-ghost text-xs text-forest-300 border border-forest-300/30 hover:bg-forest-500/10 px-3 py-1"
+                    disabled={busyId === r._id}
+                  >
+                    🔄 Extend 7 Days
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-cream-300/50 italic self-center">
+                    (Renewed)
+                  </span>
+                )
+              )}
             </div>
           </BookRow>
         );

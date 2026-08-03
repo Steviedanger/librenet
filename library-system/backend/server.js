@@ -14,6 +14,7 @@ import userRoutes from './routes/userRoutes.js';
 import borrowRoutes from './routes/borrowRoutes.js';
 import fineRoutes from './routes/fineRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 
 import { startFineScheduler } from './utils/fineScheduler.js';
 import { startNotificationScheduler } from './utils/notificationScheduler.js';
@@ -86,6 +87,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/borrow', borrowRoutes);
 app.use('/api/fines', fineRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/reviews', reviewRoutes); // <-- Moved here before health check and 404 handler
 
 // Health check
 app.get('/api/health', (req, res) => {

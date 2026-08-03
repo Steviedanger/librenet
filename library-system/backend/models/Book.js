@@ -25,6 +25,17 @@ const bookSchema = new mongoose.Schema(
         message: 'ISBN must be 10 or 13 digits',
       },
     },
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    ratingsCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true }
 );

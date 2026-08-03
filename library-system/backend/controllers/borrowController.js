@@ -3,6 +3,7 @@ import BorrowRecord from '../models/BorrowRecord.js';
 import { calculateFine } from '../utils/fineCalculator.js';
 
 const LOAN_DAYS = 14;
+const RENEWAL_DAYS = 7;
 
 /**
  * POST /api/borrow/:bookId — borrow a book (14-day loan).
@@ -97,6 +98,55 @@ export const returnBook = async (req, res, next) => {
 
     const populated = await record.populate('book');
     res.json({ record: populated });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/borrow/:recordId/renew — extend an active book loan by 7 days.
+ */
+export const renewBorrow = async (req, res, next) => {
+  try {
+    const { recordId } = req.params;
+    const record = await BorrowRecord.findById(recordId);
+
+    if (!record) {
+      return res.status(404).json({ message: 'Borrow record not found.' });
+    }
+
+    if (record.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not your borrow record.' });
+    }
+
+    if (record.status === 'returned') {
+      return res.status(400).json({ message: 'Cannot renew a returned book.' });
+    }
+
+    if (record.renewed) {
+      return res.status(400).json({ message: 'This loan has already been renewed once.' });
+    }
+
+    const now = new Date();
+    if (new Date(record.dueDate) < now) {
+      return res.status(400).json({
+        message: 'Overdue loans cannot be renewed. Please return the book or clear your fine.',
+      });
+    }
+
+    // Extend current due date by 7 days
+    const currentDueDate = new Date(record.dueDate);
+    currentDueDate.setDate(currentDueDate.getDate() + RENEWAL_DAYS);
+
+    record.dueDate = currentDueDate;
+    record.renewed = true;
+    await record.save();
+
+    const populated = await record.populate('book');
+    res.json({
+      message: 'Loan successfully extended by 7 days!',
+      record: populated,
+    });
   } catch (error) {
     next(error);
   }
