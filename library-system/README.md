@@ -14,7 +14,7 @@ keyboard accessible.
 | Database | MongoDB + Mongoose |
 | Auth     | JWT (15-min access token in memory + 7-day refresh token in an httpOnly cookie), bcryptjs |
 | Uploads  | Multer (book covers + PDFs) |
-| Email    | Nodemailer (verification + password reset) |
+| Email    | Resend (verification + password reset) |
 
 ## Features
 
@@ -55,12 +55,10 @@ MONGO_URI=mongodb://localhost:27017/library_system
 JWT_ACCESS_SECRET=<long random string>
 JWT_REFRESH_SECRET=<another long random string>
 CLIENT_URL=http://localhost:5173
-# Email is optional in dev — if EMAIL_USER is left as the placeholder,
+# Email via Resend — optional in dev. If RESEND_API_KEY is blank,
 # verification / reset emails are printed to the server console instead of sent.
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+RESEND_API_KEY=
+EMAIL_FROM=LibreNet Library <onboarding@resend.dev>
 ```
 
 Seed the database with 10 sample books, a demo student and the default admin:
@@ -161,7 +159,7 @@ Put the **`library-system/`** folder in a GitHub repo (this is the repo root —
    - `CLIENT_URL` — your Vercel URL (you’ll get it in step 3; you can paste a
      placeholder now and update it after, then redeploy)
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-   - `EMAIL_*` — optional (leave default to log emails to the Render console)
+   - `RESEND_API_KEY`, `EMAIL_FROM` — optional (leave blank to log emails to the Render console)
 3. Deploy. Note the URL, e.g. `https://librenet-api.onrender.com`.
 4. **Seed the cloud DB once:** locally, point `backend/.env`’s `MONGO_URI` at
    Atlas and run `npm run seed` (or use Render’s **Shell** tab → `npm run seed`).
@@ -197,7 +195,7 @@ library-system/
 │   ├── middleware/               # JWT auth + Multer uploads
 │   ├── models/                   # User, Book, BorrowRecord
 │   ├── routes/                   # /api/auth, /books, /users, /borrow
-│   ├── utils/sendEmail.js        # Nodemailer helper
+│   ├── utils/sendEmail.js        # Resend email helper
 │   ├── uploads/                  # covers + pdfs (gitignored)
 │   ├── seed.js                   # sample data + admin
 │   └── server.js
