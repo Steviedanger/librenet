@@ -89,6 +89,7 @@ const AdminDashboard = () => {
           { label: 'View Users', to: '/admin/users', icon: '👥' },
           { label: 'Manage Fines', to: '/admin/fines', icon: '💰' },
           { label: 'Book Requests', to: '/admin/requests', icon: '📬', badge: requestSummary.pending },
+          { label: 'Analytics', to: '/admin/analytics', icon: '📊' },
         ].map((q) => (
           <Link
             key={q.to}

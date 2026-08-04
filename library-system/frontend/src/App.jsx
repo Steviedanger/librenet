@@ -22,6 +22,7 @@ import ManageFines from './pages/admin/ManageFines.jsx';
 import FineVerify from './pages/FineVerify.jsx';
 import BookRequests from './pages/BookRequests.jsx';
 import ManageRequests from './pages/admin/ManageRequests.jsx';
+import Analytics from './pages/admin/Analytics.jsx';
 
 function App() {
   const { loading } = useAuth();
@@ -50,88 +51,19 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Authenticated students */}
-          <Route
-            path="/read/:id"
-            element={
-              <ProtectedRoute>
-                <BookReader />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/fines/verify"
-            element={
-              <ProtectedRoute>
-                <FineVerify />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/requests"
-            element={
-              <ProtectedRoute>
-                <BookRequests />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/read/:id" element={<ProtectedRoute><BookReader /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/fines/verify" element={<ProtectedRoute><FineVerify /></ProtectedRoute>} />
+          <Route path="/requests" element={<ProtectedRoute><BookRequests /></ProtectedRoute>} />
 
           {/* Admin only */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/books"
-            element={
-              <ProtectedRoute requireAdmin>
-                <ManageBooks />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute requireAdmin>
-                <ManageUsers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/fines"
-            element={
-              <ProtectedRoute requireAdmin>
-                <ManageFines />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/requests"
-            element={
-              <ProtectedRoute requireAdmin>
-                <ManageRequests />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/books" element={<ProtectedRoute requireAdmin><ManageBooks /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute requireAdmin><ManageUsers /></ProtectedRoute>} />
+          <Route path="/admin/fines" element={<ProtectedRoute requireAdmin><ManageFines /></ProtectedRoute>} />
+          <Route path="/admin/requests" element={<ProtectedRoute requireAdmin><ManageRequests /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute requireAdmin><Analytics /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

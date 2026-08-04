@@ -11,6 +11,9 @@ import {
   verifyUser,
   setUserRole,
   getStats,
+  getAnalytics,
+  exportBorrowsCSV,
+  exportFinesCSV,
 } from '../controllers/userController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import { uploadAvatar } from '../middleware/uploadMiddleware.js';
@@ -32,8 +35,15 @@ router.post('/bookmarks/:bookId', toggleBookmark);
 router.get('/progress', getProgress);
 router.put('/progress/:bookId', saveProgress);
 
-// Admin
+// Admin — stats and analytics
 router.get('/stats', authorize('admin'), getStats);
+router.get('/analytics', authorize('admin'), getAnalytics);
+
+// Admin — CSV exports
+router.get('/export/borrows', authorize('admin'), exportBorrowsCSV);
+router.get('/export/fines', authorize('admin'), exportFinesCSV);
+
+// Admin — user management
 router.get('/', authorize('admin'), getAllUsers);
 router.patch('/:id/status', authorize('admin'), setUserStatus);
 router.patch('/:id/verify', authorize('admin'), verifyUser);
