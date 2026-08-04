@@ -1,10 +1,20 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth.js';
 import bookService from '../services/bookService.js';
 import { resolveAsset, initials } from '../utils/helpers.js';
 
+const ADMIN_LINKS = [
+  { to: '/admin', label: 'Admin Console', icon: '🖥️' },
+  { to: '/admin/analytics', label: 'Analytics', icon: '📊' },
+  { to: '/admin/books', label: 'Manage Books', icon: '📚' },
+  { to: '/admin/users', label: 'Manage Users', icon: '👥' },
+  { to: '/admin/fines', label: 'Manage Fines', icon: '💰' },
+  { to: '/admin/requests', label: 'Book Requests', icon: '📬' },
+];
+
 const Profile = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isAdmin } = useAuth();
 
   const [name, setName] = useState(user?.name || '');
   const [avatar, setAvatar] = useState(null);
@@ -55,6 +65,7 @@ const Profile = () => {
       <h1 className="font-serif text-3xl md:text-4xl">Account settings</h1>
       <p className="mt-1 text-sm text-cream-300">{user?.email}</p>
 
+      {/* Library ID */}
       {user?.libraryId && (
         <div className="card mt-4 flex items-center justify-between gap-3 border-forest-300/30 p-4">
           <div>
@@ -69,12 +80,34 @@ const Profile = () => {
         </div>
       )}
 
+      {/* Admin Console Section */}
+      {isAdmin && (
+        <div className="mt-6">
+          <h2 className="font-serif text-xl text-cream-100 mb-3">Admin Console</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {ADMIN_LINKS.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className="card flex items-center gap-3 p-4 transition-colors hover:border-forest-300/30"
+              >
+                <span className="text-xl">{link.icon}</span>
+                <span className="text-sm text-cream-200">{link.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Profile form */}
       <form onSubmit={saveProfile} className="card mt-6 space-y-6 p-6">
         {(status.msg || status.err) && (
           <p
             role="status"
             className={`rounded-lg px-3 py-2 text-sm ${
-              status.err ? 'bg-red-500/15 text-red-300' : 'bg-forest-500/15 text-forest-300'
+              status.err
+                ? 'bg-red-500/15 text-red-300'
+                : 'bg-forest-500/15 text-forest-300'
             }`}
           >
             {status.err || status.msg}
@@ -92,14 +125,26 @@ const Profile = () => {
           )}
           <div>
             <label className="label" htmlFor="avatar">Profile photo</label>
-            <input id="avatar" type="file" accept="image/*" onChange={onAvatarChange} className="text-sm text-cream-300" />
+            <input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              onChange={onAvatarChange}
+              className="text-sm text-cream-300"
+            />
           </div>
         </div>
 
         {/* Name */}
         <div>
           <label className="label" htmlFor="name">Display name</label>
-          <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input
+            id="name"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
         </div>
 
         {/* Password change */}
@@ -108,16 +153,37 @@ const Profile = () => {
           <p className="text-xs text-cream-300/60">Leave blank to keep your current password.</p>
           <div>
             <label className="label" htmlFor="current">Current password</label>
-            <input id="current" type="password" className="input" value={pw.current} onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} autoComplete="current-password" />
+            <input
+              id="current"
+              type="password"
+              className="input"
+              value={pw.current}
+              onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))}
+              autoComplete="current-password"
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="next">New password</label>
-              <input id="next" type="password" className="input" value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} autoComplete="new-password" />
+              <input
+                id="next"
+                type="password"
+                className="input"
+                value={pw.next}
+                onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))}
+                autoComplete="new-password"
+              />
             </div>
             <div>
               <label className="label" htmlFor="confirm">Confirm new</label>
-              <input id="confirm" type="password" className="input" value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} autoComplete="new-password" />
+              <input
+                id="confirm"
+                type="password"
+                className="input"
+                value={pw.confirm}
+                onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))}
+                autoComplete="new-password"
+              />
             </div>
           </div>
         </fieldset>

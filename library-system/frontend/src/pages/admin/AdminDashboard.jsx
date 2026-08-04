@@ -39,19 +39,6 @@ const AdminDashboard = () => {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-3xl md:text-4xl">Admin console</h1>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/admin/books" className="btn-primary text-sm">Manage books</Link>
-          <Link to="/admin/users" className="btn-outline text-sm">Manage users</Link>
-          <Link to="/admin/fines" className="btn-outline text-sm">Fines</Link>
-          <Link to="/admin/requests" className="btn-outline text-sm relative">
-            Book Requests
-            {requestSummary.pending > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-navy-900">
-                {requestSummary.pending}
-              </span>
-            )}
-          </Link>
-        </div>
       </div>
 
       {/* Pending requests alert */}
@@ -71,6 +58,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Stats cards */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {cards.map((c) => (
           <div key={c.label} className="card p-5">
@@ -81,32 +69,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Quick links */}
-      <h2 className="mt-10 font-serif text-2xl">Quick actions</h2>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: '+ Add Book', to: '/admin/books', icon: '📕' },
-          { label: 'View Users', to: '/admin/users', icon: '👥' },
-          { label: 'Manage Fines', to: '/admin/fines', icon: '💰' },
-          { label: 'Book Requests', to: '/admin/requests', icon: '📬', badge: requestSummary.pending },
-          { label: 'Analytics', to: '/admin/analytics', icon: '📊' },
-        ].map((q) => (
-          <Link
-            key={q.to}
-            to={q.to}
-            className="card relative flex flex-col items-center gap-2 p-4 text-center transition-colors hover:border-forest-300/30"
-          >
-            <span className="text-2xl">{q.icon}</span>
-            <span className="text-sm text-cream-200">{q.label}</span>
-            {q.badge > 0 && (
-              <span className="absolute right-2 top-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-navy-900">
-                {q.badge}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
-
+      {/* Recent borrow activity */}
       <h2 className="mt-10 font-serif text-2xl">Recent borrow activity</h2>
       <div className="mt-4 overflow-hidden rounded-xl border border-cream-300/10">
         <table className="w-full text-left text-sm">

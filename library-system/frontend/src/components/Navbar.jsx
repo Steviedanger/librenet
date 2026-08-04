@@ -41,24 +41,22 @@ const Navbar = () => {
           <NavLink to="/library" className={navLinkClass}>
             Library
           </NavLink>
-          {isAuthenticated && !isAdmin && (
-            <>
-              <NavLink to="/dashboard" className={navLinkClass}>
-                Dashboard
-              </NavLink>
-              <NavLink to="/requests" className={navLinkClass}>
-                Request a Book
-              </NavLink>
-            </>
-          )}
-          {isAuthenticated && isAdmin && (
+
+          {isAuthenticated && (
             <NavLink to="/dashboard" className={navLinkClass}>
               Dashboard
             </NavLink>
           )}
+
+          {isAuthenticated && !isAdmin && (
+            <NavLink to="/requests" className={navLinkClass}>
+              Request a Book
+            </NavLink>
+          )}
+
           {isAdmin && (
             <NavLink to="/admin" className={navLinkClass}>
-              Admin
+              Admin Console
             </NavLink>
           )}
         </div>
@@ -174,6 +172,15 @@ const Navbar = () => {
               <span className="block py-1">Request a Book</span>
             </NavLink>
           )}
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className={navLinkClass}
+              onClick={() => setMenuOpen(false)}
+            >
+              <span className="block py-1">Admin Console</span>
+            </NavLink>
+          )}
           {isAuthenticated && (
             <NavLink
               to="/profile"
@@ -181,15 +188,6 @@ const Navbar = () => {
               onClick={() => setMenuOpen(false)}
             >
               <span className="block py-1">Profile</span>
-            </NavLink>
-          )}
-          {isAdmin && (
-            <NavLink
-              to="/admin"
-              className={navLinkClass}
-              onClick={() => setMenuOpen(false)}
-            >
-              <span className="block py-1">Admin</span>
             </NavLink>
           )}
           <div className="pt-2">
