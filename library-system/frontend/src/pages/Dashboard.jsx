@@ -151,7 +151,7 @@ const Dashboard = () => {
           { label: 'Borrowed', value: active.length },
           { label: 'Overdue', value: active.filter((r) => r.status === 'overdue').length },
           { label: 'Bookmarks', value: bookmarks.length },
-          { label: 'In progress', value: progress.length },
+          { label: 'Completed', value: progress.filter((p) => p.completed).length },
         ].map((s) => (
           <div key={s.label} className="card p-4">
             <div className="font-serif text-3xl text-forest-300">{s.value}</div>

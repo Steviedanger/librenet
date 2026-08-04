@@ -17,9 +17,13 @@ const BookReader = () => {
   const [numPages, setNumPages] = useState(0);
   const [savedAt, setSavedAt] = useState(null);
   const [scale, setScale] = useState(1.1);
+  const [completed, setCompleted] = useState(false);
+  const [newBadges, setNewBadges] = useState([]);
+  const [showBadgePopup, setShowBadgePopup] = useState(false);
 
   const pageRef = useRef(1);
   const lastSavedRef = useRef(1);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     pageRef.current = page;
@@ -35,6 +39,11 @@ const BookReader = () => {
         setPage(res.currentPage || 1);
         pageRef.current = res.currentPage || 1;
         lastSavedRef.current = res.currentPage || 1;
+        // If already completed before
+        if (res.completed) {
+          setCompleted(true);
+          completedRef.current = true;
+        }
       })
       .catch((err) =>
         active && setError(err.response?.data?.message || 'Unable to open this book')
@@ -45,23 +54,40 @@ const BookReader = () => {
     };
   }, [id]);
 
-  const saveProgress = async () => {
-    if (pageRef.current === lastSavedRef.current) return;
+  const saveProgress = async (isCompleted = false) => {
+    if (pageRef.current === lastSavedRef.current && !isCompleted) return;
     try {
-      await bookService.saveProgress(id, pageRef.current);
+      const res = await bookService.saveProgress(id, pageRef.current, isCompleted);
       lastSavedRef.current = pageRef.current;
       setSavedAt(new Date());
+
+      // Check if badges were awarded on completion
+      if (isCompleted && res.newBadges && res.newBadges.length > 0) {
+        setNewBadges(res.newBadges);
+        setShowBadgePopup(true);
+      }
     } catch {
       /* network hiccup — will retry on next tick */
     }
   };
 
+  // Check if student reached the last page
+  useEffect(() => {
+    if (!data || !numPages) return;
+    const totalPages = numPages || data.pageCount || 0;
+    if (totalPages > 0 && page >= totalPages && !completedRef.current) {
+      completedRef.current = true;
+      setCompleted(true);
+      saveProgress(true); // trigger completion
+    }
+  }, [page, numPages]);
+
   useEffect(() => {
     if (!data) return undefined;
-    const timer = setInterval(saveProgress, 30000);
+    const timer = setInterval(() => saveProgress(false), 30000);
     return () => {
       clearInterval(timer);
-      saveProgress();
+      saveProgress(false);
     };
   }, [data, id]);
 
@@ -78,12 +104,46 @@ const BookReader = () => {
   const clamp = (p) => Math.max(1, totalPages ? Math.min(totalPages, p) : p);
 
   return (
-    <div 
+    <div
       className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col px-4 py-4 select-none"
       style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       onContextMenu={(e) => e.preventDefault()}
       onCopy={(e) => e.preventDefault()}
     >
+      {/* Badge congratulations popup */}
+      {showBadgePopup && newBadges.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="card w-full max-w-sm p-8 text-center">
+            <div className="text-5xl mb-2">🎉</div>
+            <h2 className="font-serif text-2xl text-forest-300">
+              {newBadges.length === 1 ? 'Badge Earned!' : 'Badges Earned!'}
+            </h2>
+            <p className="mt-1 text-sm text-cream-300/70">Keep up the great reading!</p>
+            <div className="mt-6 space-y-3">
+              {newBadges.map((b) => (
+                <div key={b.id} className="flex items-center gap-3 rounded-xl border border-forest-300/20 bg-forest-500/10 p-3">
+                  <span className="text-3xl">{b.icon}</span>
+                  <div className="text-left">
+                    <p className="font-semibold text-cream-100">{b.name}</p>
+                    <p className="text-xs text-cream-300/70">{b.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setShowBadgePopup(false)} className="btn-primary mt-6 w-full">
+              Awesome! 🚀
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Book completed banner */}
+      {completed && (
+        <div className="mb-3 rounded-xl border border-forest-300/30 bg-forest-500/10 px-4 py-3 text-center text-sm text-forest-300">
+          🎉 You've completed this book! Check your dashboard for any new badges earned.
+        </div>
+      )}
+
       {/* Reader toolbar */}
       <div className="card mb-3 flex flex-wrap items-center justify-between gap-3 p-3">
         <div className="min-w-0">
@@ -95,7 +155,7 @@ const BookReader = () => {
 
         <div className="flex items-center gap-2">
           {/* Zoom controls */}
-          <button 
+          <button
             onClick={() => setScale((s) => Math.max(0.7, s - 0.1))}
             className="btn-ghost px-2 py-1 text-xs"
             title="Zoom out"
@@ -103,7 +163,7 @@ const BookReader = () => {
             -
           </button>
           <span className="text-xs text-cream-300/60">{Math.round(scale * 100)}%</span>
-          <button 
+          <button
             onClick={() => setScale((s) => Math.min(1.8, s + 0.1))}
             className="btn-ghost px-2 py-1 text-xs"
             title="Zoom in"
@@ -143,7 +203,7 @@ const BookReader = () => {
           >
             ›
           </button>
-          <button onClick={saveProgress} className="btn-outline px-3 py-1.5 text-sm">
+          <button onClick={() => saveProgress(false)} className="btn-outline px-3 py-1.5 text-sm">
             Save progress
           </button>
         </div>
@@ -152,6 +212,7 @@ const BookReader = () => {
       {savedAt && (
         <p className="mb-2 text-right text-xs text-cream-300/50">
           Progress saved at {savedAt.toLocaleTimeString()}
+          {completed && ' · ✓ Completed'}
         </p>
       )}
 

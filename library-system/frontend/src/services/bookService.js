@@ -27,7 +27,7 @@ export const bookService = {
   returnBook: (recordId) =>
     api.post(`/borrow/${recordId}/return`).then((r) => r.data),
   renewLoan: (recordId) =>
-    api.put(`/borrow/renew/${recordId}`).then((r) => r.data), // <-- Added renewal method
+    api.put(`/borrow/renew/${recordId}`).then((r) => r.data),
   myBorrows: () => api.get('/borrow/me').then((r) => r.data),
   allBorrows: () => api.get('/borrow').then((r) => r.data),
 
@@ -43,8 +43,12 @@ export const bookService = {
   toggleBookmark: (bookId) =>
     api.post(`/users/bookmarks/${bookId}`).then((r) => r.data),
   progress: () => api.get('/users/progress').then((r) => r.data),
-  saveProgress: (bookId, currentPage) =>
-    api.put(`/users/progress/${bookId}`, { currentPage }).then((r) => r.data),
+
+  // Updated: now accepts isCompleted flag
+  saveProgress: (bookId, currentPage, isCompleted = false) =>
+    api
+      .put(`/users/progress/${bookId}`, { currentPage, isCompleted })
+      .then((r) => r.data),
 
   // Admin users & stats
   users: () => api.get('/users').then((r) => r.data),

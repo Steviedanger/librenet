@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Book from '../models/Book.js';
 import BorrowRecord from '../models/BorrowRecord.js';
 import { saveUpload, removeUpload } from '../utils/fileStorage.js';
+import { awardBadges } from '../utils/badgeEngine.js';
 
 /**
  * GET /api/users/me — current profile.
@@ -21,7 +22,6 @@ export const updateProfile = async (req, res, next) => {
     if (name) user.name = name;
 
     if (req.file) {
-      // Replace any previous avatar so we don't orphan files.
       await removeUpload(user.avatarPublicId);
       const saved = await saveUpload(req.file, 'avatar');
       user.avatar = saved.url;
@@ -98,11 +98,13 @@ export const getBookmarks = async (req, res, next) => {
 
 /**
  * PUT /api/users/progress/:bookId — save the last page read.
+ * If isCompleted=true, marks the book as fully read and awards badges.
  */
 export const saveProgress = async (req, res, next) => {
   try {
     const { bookId } = req.params;
-    const { currentPage } = req.body;
+    const { currentPage, isCompleted = false } = req.body;
+
     if (!currentPage || currentPage < 1) {
       return res.status(400).json({ message: 'A valid currentPage is required' });
     }
@@ -115,12 +117,36 @@ export const saveProgress = async (req, res, next) => {
     if (existing) {
       existing.currentPage = currentPage;
       existing.updatedAt = new Date();
+      // Only mark completed once — don't flip back if already completed
+      if (isCompleted && !existing.completed) {
+        existing.completed = true;
+        existing.completedAt = new Date();
+      }
     } else {
-      user.readingProgress.push({ book: bookId, currentPage });
+      user.readingProgress.push({
+        book: bookId,
+        currentPage,
+        completed: isCompleted,
+        completedAt: isCompleted ? new Date() : null,
+      });
     }
 
-    await user.save();
-    res.json({ message: 'Progress saved', currentPage });
+    let newBadges = [];
+
+    // Award reading badges on first completion of this book
+    if (isCompleted && (!existing || !existing.completed)) {
+      user.totalBooksRead += 1;
+      newBadges = await awardBadges(user);
+    } else {
+      await user.save();
+    }
+
+    res.json({
+      message: isCompleted ? 'Book marked as completed!' : 'Progress saved',
+      currentPage,
+      completed: isCompleted,
+      newBadges,
+    });
   } catch (error) {
     next(error);
   }
@@ -141,6 +167,8 @@ export const getProgress = async (req, res, next) => {
         book: p.book,
         currentPage: p.currentPage,
         updatedAt: p.updatedAt,
+        completed: p.completed || false,
+        completedAt: p.completedAt || null,
         percent: p.book.pageCount
           ? Math.min(100, Math.round((p.currentPage / p.book.pageCount) * 100))
           : 0,
@@ -189,8 +217,7 @@ export const setUserStatus = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/users/:id/verify (admin) — mark an account as verified so the
- * user can log in, without needing to edit MongoDB by hand.
+ * PATCH /api/users/:id/verify (admin) — mark an account as verified.
  */
 export const verifyUser = async (req, res, next) => {
   try {
@@ -207,8 +234,7 @@ export const verifyUser = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/users/:id/role (admin) — promote a user to admin or demote to
- * student.
+ * PATCH /api/users/:id/role (admin) — promote or demote a user.
  */
 export const setUserRole = async (req, res, next) => {
   try {

@@ -15,6 +15,8 @@ const progressSchema = new mongoose.Schema(
     book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
     currentPage: { type: Number, default: 1 },
     updatedAt: { type: Date, default: Date.now },
+    completed: { type: Boolean, default: false },
+    completedAt: { type: Date, default: null },
   },
   { _id: false }
 );
