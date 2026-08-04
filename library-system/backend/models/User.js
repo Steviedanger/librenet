@@ -19,11 +19,20 @@ const progressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const badgeSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },       // e.g. "first_read"
+    name: { type: String, required: true },     // e.g. "First Read"
+    description: { type: String, default: '' }, // e.g. "Finished your first book"
+    icon: { type: String, default: '🏅' },      // emoji icon
+    earnedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    // Auto-generated on first save, e.g. "LIB-00001". sparse so any legacy
-    // users without one don't collide on the unique index.
     libraryId: { type: String, unique: true, sparse: true, index: true },
     email: {
       type: String,
@@ -43,6 +52,11 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: { type: Date, select: false },
     bookmarks: [bookmarkSchema],
     readingProgress: [progressSchema],
+    badges: [badgeSchema],
+    totalBooksRead: { type: Number, default: 0 },
+    totalBorrows: { type: Number, default: 0 },
+    onTimeReturns: { type: Number, default: 0 },
+    neverHadFine: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

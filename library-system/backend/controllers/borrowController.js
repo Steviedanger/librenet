@@ -1,6 +1,8 @@
 import Book from '../models/Book.js';
 import BorrowRecord from '../models/BorrowRecord.js';
+import User from '../models/User.js';
 import { calculateFine } from '../utils/fineCalculator.js';
+import { awardBadges } from '../utils/badgeEngine.js';
 
 const LOAN_DAYS = 14;
 const RENEWAL_DAYS = 7;
@@ -58,6 +60,11 @@ export const borrowBook = async (req, res, next) => {
     book.totalBorrows += 1;
     await book.save();
 
+    // Update user stats and check for new badges
+    const user = await User.findById(req.user._id);
+    user.totalBorrows += 1;
+    await awardBadges(user);
+
     const populated = await record.populate('book');
     res.status(201).json({ record: populated });
   } catch (error) {
@@ -81,10 +88,10 @@ export const returnBook = async (req, res, next) => {
       return res.status(400).json({ message: 'Book already returned' });
     }
 
+    const returnedAt = new Date();
     record.status = 'returned';
-    record.returnedAt = new Date();
-    // Freeze the accrued fine on the record at the moment of return.
-    record.fineAmount = calculateFine(record.dueDate, record.returnedAt);
+    record.returnedAt = returnedAt;
+    record.fineAmount = calculateFine(record.dueDate, returnedAt);
     await record.save();
 
     const book = await Book.findById(record.book);
@@ -96,8 +103,28 @@ export const returnBook = async (req, res, next) => {
       await book.save();
     }
 
+    // Update user stats
+    const user = await User.findById(req.user._id);
+    user.totalBooksRead += 1;
+
+    // Check if returned on time (before or on due date)
+    if (returnedAt <= record.dueDate) {
+      user.onTimeReturns += 1;
+    }
+
+    // If a fine was accrued mark neverHadFine as false
+    if (record.fineAmount > 0) {
+      user.neverHadFine = false;
+    }
+
+    // Check for new badges
+    const newBadges = await awardBadges(user);
+
     const populated = await record.populate('book');
-    res.json({ record: populated });
+    res.json({
+      record: populated,
+      newBadges, // send to frontend so we can show a congratulations popup
+    });
   } catch (error) {
     next(error);
   }
@@ -134,7 +161,6 @@ export const renewBorrow = async (req, res, next) => {
       });
     }
 
-    // Extend current due date by 7 days
     const currentDueDate = new Date(record.dueDate);
     currentDueDate.setDate(currentDueDate.getDate() + RENEWAL_DAYS);
 
@@ -154,7 +180,6 @@ export const renewBorrow = async (req, res, next) => {
 
 /**
  * GET /api/borrow/me — current user's borrow records.
- * Marks active records past their due date as overdue on read.
  */
 export const getMyBorrows = async (req, res, next) => {
   try {
@@ -166,7 +191,6 @@ export const getMyBorrows = async (req, res, next) => {
     const overdueIds = [];
     const result = records.map((r) => {
       const obj = r.toObject();
-      // Surface the live, still-accruing fine for books not yet returned.
       if (r.status !== 'returned') {
         obj.fineAmount = calculateFine(r.dueDate, now);
         if (r.dueDate < now) {

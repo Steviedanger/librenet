@@ -17,6 +17,7 @@ const TABS = [
   { key: 'reading', label: 'Reading progress' },
   { key: 'bookmarks', label: 'Bookmarks' },
   { key: 'history', label: 'History' },
+  { key: 'badges', label: 'Badges' },
 ];
 
 const Dashboard = () => {
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [fines, setFines] = useState({ fines: [], total: 0, count: 0 });
   const [busyId, setBusyId] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [newBadges, setNewBadges] = useState([]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -57,7 +59,11 @@ const Dashboard = () => {
   const handleReturn = async (recordId) => {
     setBusyId(recordId);
     try {
-      await bookService.returnBook(recordId);
+      const res = await bookService.returnBook(recordId);
+      // Show badge popup if new badges were earned
+      if (res.newBadges && res.newBadges.length > 0) {
+        setNewBadges(res.newBadges);
+      }
       await loadAll();
     } finally {
       setBusyId(null);
@@ -81,7 +87,6 @@ const Dashboard = () => {
     setPayingId(borrowId);
     try {
       const res = await api.post(`/fines/${borrowId}/initiate-payment`);
-      // Redirect to Paystack payment page
       window.location.href = res.data.authorizationUrl;
     } catch (err) {
       alert(err.response?.data?.message || 'Could not initiate payment. Please try again.');
@@ -100,6 +105,12 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
+
+      {/* Badge congratulations popup */}
+      {newBadges.length > 0 && (
+        <BadgePopup badges={newBadges} onClose={() => setNewBadges([])} />
+      )}
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl md:text-4xl">
@@ -172,6 +183,11 @@ const Dashboard = () => {
             }`}
           >
             {t.label}
+            {t.key === 'badges' && user?.badges?.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-forest-500/30 px-1.5 py-0.5 text-xs text-forest-300">
+                {user.badges.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -194,6 +210,7 @@ const Dashboard = () => {
               <BookmarkList books={bookmarks} onRemove={handleRemoveBookmark} />
             )}
             {tab === 'history' && <HistoryList records={returned} />}
+            {tab === 'badges' && <BadgesList badges={user?.badges || []} totalBorrows={user?.totalBorrows || 0} totalBooksRead={user?.totalBooksRead || 0} />}
           </>
         )}
       </div>
@@ -206,6 +223,110 @@ const Dashboard = () => {
 const EmptyState = ({ children }) => (
   <p className="py-12 text-center text-cream-300/60">{children}</p>
 );
+
+/* Badge congratulations popup */
+const BadgePopup = ({ badges, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div className="card w-full max-w-sm p-8 text-center">
+      <div className="text-5xl mb-2">🎉</div>
+      <h2 className="font-serif text-2xl text-forest-300">
+        {badges.length === 1 ? 'Badge Earned!' : 'Badges Earned!'}
+      </h2>
+      <p className="mt-1 text-sm text-cream-300/70">Keep up the great reading!</p>
+      <div className="mt-6 space-y-3">
+        {badges.map((b) => (
+          <div key={b.id} className="flex items-center gap-3 rounded-xl border border-forest-300/20 bg-forest-500/10 p-3">
+            <span className="text-3xl">{b.icon}</span>
+            <div className="text-left">
+              <p className="font-semibold text-cream-100">{b.name}</p>
+              <p className="text-xs text-cream-300/70">{b.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button onClick={onClose} className="btn-primary mt-6 w-full">
+        Awesome! 🚀
+      </button>
+    </div>
+  </div>
+);
+
+/* Badges tab */
+const ALL_BADGE_DEFS = [
+  { id: 'new_member', name: 'New Member', description: 'Borrowed your first book', icon: '🆕' },
+  { id: 'regular_reader', name: 'Regular Reader', description: 'Borrowed 10 books', icon: '⭐' },
+  { id: 'power_reader', name: 'Power Reader', description: 'Borrowed 25 books', icon: '🔥' },
+  { id: 'first_read', name: 'First Read', description: 'Finished your first book', icon: '🥇' },
+  { id: 'bookworm', name: 'Bookworm', description: 'Read 5 books', icon: '📚' },
+  { id: 'scholar', name: 'Scholar', description: 'Read 10 books', icon: '🎓' },
+  { id: 'bibliophile', name: 'Bibliophile', description: 'Read 25 books', icon: '📖' },
+  { id: 'on_time', name: 'On Time', description: 'Returned 5 books before due date', icon: '✅' },
+  { id: 'early_bird', name: 'Early Bird', description: 'Returned 10 books before due date', icon: '⚡' },
+  { id: 'perfect_record', name: 'Perfect Record', description: 'Never received a fine', icon: '🏅' },
+];
+
+const BadgesList = ({ badges, totalBorrows, totalBooksRead }) => {
+  const earnedIds = new Set(badges.map((b) => b.id));
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap gap-4">
+        <div className="card p-4 text-center min-w-[120px]">
+          <div className="font-serif text-3xl text-forest-300">{badges.length}</div>
+          <div className="text-xs text-cream-300/70">Badges earned</div>
+        </div>
+        <div className="card p-4 text-center min-w-[120px]">
+          <div className="font-serif text-3xl text-forest-300">{totalBorrows}</div>
+          <div className="text-xs text-cream-300/70">Total borrows</div>
+        </div>
+        <div className="card p-4 text-center min-w-[120px]">
+          <div className="font-serif text-3xl text-forest-300">{totalBooksRead}</div>
+          <div className="text-xs text-cream-300/70">Books read</div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+        {ALL_BADGE_DEFS.map((def) => {
+          const earned = earnedIds.has(def.id);
+          const earnedData = badges.find((b) => b.id === def.id);
+          return (
+            <div
+              key={def.id}
+              className={`rounded-xl border p-4 transition-all ${
+                earned
+                  ? 'border-forest-300/30 bg-forest-500/10'
+                  : 'border-cream-300/10 bg-navy-800/40 opacity-50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`text-3xl ${!earned && 'grayscale'}`}>
+                  {earned ? def.icon : '🔒'}
+                </span>
+                <div>
+                  <p className={`font-semibold text-sm ${earned ? 'text-cream-100' : 'text-cream-300/50'}`}>
+                    {def.name}
+                  </p>
+                  <p className="text-xs text-cream-300/50">{def.description}</p>
+                  {earned && earnedData?.earnedAt && (
+                    <p className="text-xs text-forest-300 mt-0.5">
+                      ✓ Earned {formatDate(earnedData.earnedAt)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {badges.length === 0 && (
+        <p className="mt-6 text-center text-sm text-cream-300/50">
+          No badges yet — start borrowing and returning books to earn them! 🏆
+        </p>
+      )}
+    </div>
+  );
+};
 
 const FinesSection = ({ fines, total, payingId, onPayOnline }) => (
   <section className="mt-8">
