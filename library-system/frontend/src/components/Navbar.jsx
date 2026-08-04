@@ -41,7 +41,17 @@ const Navbar = () => {
           <NavLink to="/library" className={navLinkClass}>
             Library
           </NavLink>
-          {isAuthenticated && (
+          {isAuthenticated && !isAdmin && (
+            <>
+              <NavLink to="/dashboard" className={navLinkClass}>
+                Dashboard
+              </NavLink>
+              <NavLink to="/requests" className={navLinkClass}>
+                Request a Book
+              </NavLink>
+            </>
+          )}
+          {isAuthenticated && isAdmin && (
             <NavLink to="/dashboard" className={navLinkClass}>
               Dashboard
             </NavLink>
@@ -56,9 +66,7 @@ const Navbar = () => {
         <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
             <>
-              {/* Notification Bell Icon */}
               <NotificationBell />
-
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-full border border-cream-300/15 py-1 pl-1 pr-3 transition-colors hover:border-forest-300"
@@ -78,7 +86,6 @@ const Navbar = () => {
                   {user?.name?.split(' ')[0]}
                 </span>
               </Link>
-
               <button onClick={handleLogout} className="btn-ghost text-sm">
                 Logout
               </button>
@@ -156,6 +163,15 @@ const Navbar = () => {
               onClick={() => setMenuOpen(false)}
             >
               <span className="block py-1">Dashboard</span>
+            </NavLink>
+          )}
+          {isAuthenticated && !isAdmin && (
+            <NavLink
+              to="/requests"
+              className={navLinkClass}
+              onClick={() => setMenuOpen(false)}
+            >
+              <span className="block py-1">Request a Book</span>
             </NavLink>
           )}
           {isAuthenticated && (

@@ -67,6 +67,14 @@ export const bookService = {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then((r) => r.data),
+
+  // Book Requests
+  myRequests: () => api.get('/requests/my-requests').then((r) => r.data),
+  submitRequest: (data) => api.post('/requests', data).then((r) => r.data),
+  cancelRequest: (id) => api.delete(`/requests/${id}`).then((r) => r.data),
+  allRequests: (params) => api.get('/requests/all', { params }).then((r) => r.data),
+  reviewRequest: (id, data) => api.patch(`/requests/${id}/review`, data).then((r) => r.data),
+  requestSummary: () => api.get('/requests/summary').then((r) => r.data),
 };
 
 export default bookService;

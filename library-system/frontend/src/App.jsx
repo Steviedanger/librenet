@@ -20,6 +20,8 @@ import ManageBooks from './pages/admin/ManageBooks.jsx';
 import ManageUsers from './pages/admin/ManageUsers.jsx';
 import ManageFines from './pages/admin/ManageFines.jsx';
 import FineVerify from './pages/FineVerify.jsx';
+import BookRequests from './pages/BookRequests.jsx';
+import ManageRequests from './pages/admin/ManageRequests.jsx';
 
 function App() {
   const { loading } = useAuth();
@@ -80,6 +82,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/requests"
+            element={
+              <ProtectedRoute>
+                <BookRequests />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin only */}
           <Route
@@ -111,6 +121,14 @@ function App() {
             element={
               <ProtectedRoute requireAdmin>
                 <ManageFines />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/requests"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ManageRequests />
               </ProtectedRoute>
             }
           />
